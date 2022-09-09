@@ -1,25 +1,59 @@
+import static java.util.stream.Collectors.toList;
+
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 public class Transaction {
 
     private ConcurrentHashMap<String, Integer> items = new ConcurrentHashMap<>();
     private boolean canceled = false;
+    private final String username;
 
     public Transaction() {
+        this.username = "admin";
     }
 
-    public void addItems(String itemName, int quantity) {
-        items.put(itemName, items.getOrDefault(itemName, 0) + quantity);
+    public Transaction(String username, String itemName, int quantity) {
+        this.username = username;
+        purchase(itemName, quantity);
+    }
+
+    public List<String> list() {
+        return items.entrySet().stream()
+                .sorted(ConcurrentHashMap.Entry.comparingByKey())
+                .map(e -> String.format("%s %d", e.getKey(), e.getValue()))
+                .collect(toList());
+    }
+
+    public String singleItem() {
+        ConcurrentHashMap.Entry<String, Integer> e = items.entrySet().iterator().next();
+        return String.format("%s, %d", e.getKey(), -e.getValue());
+    }
+
+    public boolean isValid() {
+        return items.values().stream().allMatch(q -> q >= 0);
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public boolean isCanceled() {
+        return canceled;
     }
 
     public void cancel() {
         this.canceled = true;
     }
 
-    public boolean isValid() {
-        return items.values().stream().allMatch(q -> q >= 0);
+    public void purchase(String itemName, int quantity) {
+        addItems(itemName, -quantity);
+    }
+
+    public void addItems(String itemName, int quantity) {
+        items.put(itemName, items.getOrDefault(itemName, 0) + quantity);
     }
 
     public static Transaction mergeTransactions(Transaction t1, Transaction t2) {
@@ -42,11 +76,11 @@ public class Transaction {
 
     @Override
     public String toString() {
-        StringBuilder name = new StringBuilder();
+        StringBuilder name = new StringBuilder(String.format("'%s'\n", username));
         if (canceled) {
-            name.append("[CANCELED]");
+            name.append("[CANCELED]\n");
         }
-        items.entrySet().forEach(entry -> name.append(String.format("\n%s: %d", entry.getKey(), entry.getValue())));
+        list().forEach(e -> name.append(e + "\n"));
         return name.toString();
     }
 }

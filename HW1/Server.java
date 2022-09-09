@@ -1,7 +1,6 @@
 public class Server {
   public static void main(String[] args) throws Exception {
-    int tcpPort;
-    int udpPort;
+
     if (args.length != 3) {
       System.out.println("ERROR: Provide 3 arguments");
       System.out.println("\t(1) <tcpPort>: the port number for TCP connection");
@@ -10,15 +9,16 @@ public class Server {
 
       System.exit(-1);
     }
-    tcpPort = Integer.parseInt(args[0]);
-    udpPort = Integer.parseInt(args[1]);
+
+    int tcpPort = Integer.parseInt(args[0]);
+    int udpPort = Integer.parseInt(args[1]);
     String fileName = args[2];
 
     // TODO: getters and setters for inventory map, how do we make this thread safe?
 
     // udpServer(udpPort);
     Inventory inventory = new Inventory(fileName);
-    inventory.buyItem("xbox", 3);
+    inventory.purchase("sammy", "xbox", 3);
     System.out.println(inventory);
 
     CommandParser serverParser = new CommandParser(inventory);

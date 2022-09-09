@@ -19,7 +19,7 @@ public class UDPServer extends Thread {
             dataSocket = new DatagramSocket(port);
             buf = new byte[len];
         } catch (SocketException se) {
-            System.err.println((se));
+            System.err.println(se);
         }
     }
 

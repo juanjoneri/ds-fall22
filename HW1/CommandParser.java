@@ -1,10 +1,10 @@
 public class CommandParser {
 
-  public CommandParser(Inventory argInventory) {
-    mInventroy = argInventory;
-  }
+  private Inventory inventory;
 
-  Inventory mInventroy;
+  public CommandParser(Inventory inventory) {
+    this.inventory = inventory;
+  }
 
   public String parseBuffer(byte[] msgData) {
     String msg = new String(msgData);
@@ -18,8 +18,8 @@ public class CommandParser {
       // and display the name of the protocol that will be used in future
     } else if (tokens[0].equals("purchase")) {
 
-      mInventroy.buyItem(tokens[2], Integer.parseInt(tokens[3].trim()));
-      System.out.println(mInventroy);
+      inventory.purchase(tokens[1], tokens[2], Integer.parseInt(tokens[3].trim()));
+      System.out.println(inventory);
       returnData = "You purchased : " + tokens[2] + "!!"; // todo add logic for different messages
 
       // TODO: send appropriate command to the server and display the
