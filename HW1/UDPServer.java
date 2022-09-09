@@ -12,73 +12,58 @@ public class UDPServer extends Thread {
     int len;
     CommandParser mParser;
 
-
-    public UDPServer(Integer port, CommandParser parser)
-    {
+    public UDPServer(Integer port, CommandParser parser) {
         mParser = parser;
         len = 1024;
-        try
-        {
+        try {
             dataSocket = new DatagramSocket(port);
             buf = new byte[len];
-        }
-        catch (SocketException se)
-        {
+        } catch (SocketException se) {
             System.err.println((se));
         }
     }
 
     @Override
-    public void run()
-    {
-        while(true)
-        {
-            try
-            {
+    public void run() {
+        while (true) {
+            try {
                 dataPacket = new DatagramPacket(buf, buf.length);
                 dataSocket.receive(dataPacket);
-                //String msg = new String(dataPacket.getData());
-                //System.out.print(msg);
+                // String msg = new String(dataPacket.getData());
+                // System.out.print(msg);
 
                 String returnMessage = mParser.parseBuffer(dataPacket.getData());
 
                 returnPacket = new DatagramPacket(returnMessage.getBytes(),
-                                            returnMessage.length(),
-                                            dataPacket.getAddress(),
-                                            dataPacket.getPort());
+                        returnMessage.length(),
+                        dataPacket.getAddress(),
+                        dataPacket.getPort());
                 dataSocket.send(returnPacket);
-            }
-            catch (IOException e)
-            {
+            } catch (IOException e) {
                 System.err.println(e);
             }
         }
     }
 
     // todo: make a funcion that can send a message
-    public boolean send(byte[] msg)
-    {
-        try
-        {
+    public boolean send(byte[] msg) {
+        try {
             dataPacket = new DatagramPacket(buf, buf.length);
             dataSocket.receive(dataPacket);
-            //String msg = new String(dataPacket.getData());
-            //System.out.print(msg);
+            // String msg = new String(dataPacket.getData());
+            // System.out.print(msg);
 
             mParser.parseBuffer(dataPacket.getData());
 
             returnPacket = new DatagramPacket(dataPacket.getData(),
-                                        dataPacket.getLength(),
-                                        dataPacket.getAddress(),
-                                        dataPacket.getPort());
+                    dataPacket.getLength(),
+                    dataPacket.getAddress(),
+                    dataPacket.getPort());
             dataSocket.send(returnPacket);
-        }
-        catch (IOException e)
-        {
+        } catch (IOException e) {
             System.err.println(e);
             return false;
         }
         return true;
     }
 }
-

@@ -1,11 +1,5 @@
-import java.io.*;
-import java.net.*;
-import java.util.*;
-
-import Inventory.*;
-
 public class Server {
-  public static void main (String[] args) throws FileNotFoundException, IOException{
+  public static void main(String[] args) throws Exception {
     int tcpPort;
     int udpPort;
     if (args.length != 3) {
@@ -22,16 +16,12 @@ public class Server {
 
     // TODO: getters and setters for inventory map, how do we make this thread safe?
 
-
-
-
-    //udpServer(udpPort);
+    // udpServer(udpPort);
     Inventory inventory = new Inventory(fileName);
     inventory.buyItem("xbox", 3);
-    inventory.printMap();
+    System.out.println(inventory);
 
     CommandParser serverParser = new CommandParser(inventory);
-
 
     UDPServer server = new UDPServer(udpPort, serverParser);
     server.start();
