@@ -4,7 +4,6 @@ import java.io.FileReader;
 import java.io.BufferedReader;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.Map;
 import java.util.List;
 
 public class Inventory {
@@ -26,29 +25,44 @@ public class Inventory {
         addTransaction(initialTransaction);
     }
 
-    // returns false if transactionId is not found
+    /**
+     * @returns false if transactionId is not found
+     */
     public boolean cancel(int transactionId) {
         boolean validId = transactions.containsKey(transactionId);
         if (validId) {
             transactions.get(transactionId).cancel();
         }
         return validId;
+        // TODO: return structured response 'Order <id> is canceled'
+        // or '<id> not found, no such order'
     }
 
-    // returns empty map if user has no transactions
+    /**
+     * @returns the list of non-canceled transactions for this user, empty if no transactions.
+     */
     public List<String> search(String username) {
         return transactions.entrySet().stream()
                 .filter(e -> !e.getValue().isCanceled() && e.getValue().getUsername().equals(username))
                 .map(e -> String.format("%d, %s", e.getKey(), e.getValue().singleItem()))
                 .collect(toList());
+
+        // TODO: return 'No order found for <user-name>' instead of empty
     }
 
-    // returns -1 if transaction is invalid
+    /**
+     * @returns the transaction id or -1 if invalid
+     */
     public int purchase(String username, String itemName, int quantity) {
         Transaction t = new Transaction(username, itemName, quantity);
         return addTransaction(t);
+        // TODO: return 'Not Available - Not enough items'
+        // or 'You order has been placed, <order-id> <user-name> <product-name> <quantity>'
     }
 
+    /**
+     * @return a list of items and their quantities remaining.
+     */
     public List<String> list() {
         return computeInventory().list();
     }
@@ -80,21 +94,19 @@ public class Inventory {
 
     public static void main(String[] args) throws Exception {
         Inventory inventory = new Inventory("input/inventory.txt");
-        Transaction t1 = new Transaction("juan", "phone", 5);
-        Transaction t2 = new Transaction("sammy", "camera", 9);
-        Transaction t3 = new Transaction("sammy", "xbox", 8);
 
         System.out.println(inventory.list());
 
-        inventory.addTransaction(t1);
-        inventory.addTransaction(t2);
-        inventory.addTransaction(t3);
-        
+        inventory.purchase("juan", "phone", 5);
+        inventory.purchase("sammy", "camera", 9);
+        inventory.purchase("sammy", "xbox", 8);
+
         System.out.println(inventory.list());
-        
+
         System.out.println(inventory.search("juan"));
         System.out.println(inventory.search("sammy"));
         inventory.cancel(2);
         System.out.println(inventory.search("sammy"));
+        System.out.println(inventory.search("invalidUser"));
     }
 }
