@@ -1,82 +1,60 @@
-import java.util.Scanner;
-import java.net.*;
-import java.io.*;
-
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 
 public class Client {
 
-  public static void sendUdpCommand(int port, String command) throws UnknownHostException, SocketException, IOException
-  {
-    String hostname;
-    //int port = 2018;
-    int len = 1024;
-    DatagramPacket sPacket, rPacket;
-    hostname = "localhost";
+  private static final int BUFFER_LENGTH = 1024;
+  
+  private Constants.Protocol protocol = Constants.Protocol.UDP; // TODO: set to udp
+  
+  private final InetAddress host;
 
-    try
-    {
-      InetAddress ia = InetAddress.getByName(hostname);
-      DatagramSocket dataSocket = new DatagramSocket();
-      //BufferedReader stdinp = new BufferedReader(new InputStreamReader(System.in));
-      //while (true)
-      {
-        try
-        {
-          String echoline = command;
-          //String echoline = stdinp.readLine();
-          //if (echoline.equals("done")) break;
-          byte[] buffer = new byte[echoline.length()];
-          buffer = echoline.getBytes();
-          sPacket = new DatagramPacket(buffer, buffer.length, ia, port);
-          dataSocket.send(sPacket);
-          byte[] rbuf = new byte[1024];
-          DatagramPacket returnPacket = new DatagramPacket(rbuf, 1024);
-          dataSocket.receive(returnPacket);
-          String msg = new String(returnPacket.getData());
-          System.out.print(msg);
-          //byte[] rbuffer = new byte[len];
-          //rPacket = new DatagramPacket(rbuffer, rbuffer.length);
-          //dataSocket.send(rPacket);
-          //String retstring = new String(rPacket.getData(), 0, rPacket.getLength());
-          //System.out.println(retstring);
-        }
-        catch (IOException e)
-        {
-          System.err.println(e);
-        }
-      }// while
-    }
-    catch (UnknownHostException e)
-    {
-      System.err.println(e);
-    }
-    catch (SocketException se)
-    {
-      System.err.println(se);
-    }
+  private final int tcpPort;
+  private final int udpPort;
+
+  public Client(String hostAddress, int hostTcpPort, int tcpPort, int udpPort) throws Exception {
+    host = InetAddress.getByName(hostAddress);
+    this.tcpPort = tcpPort;
+    this.udpPort = udpPort;
+
+    establishConnection(hostTcpPort);
   }
 
-  public static void main (String[] args) throws UnknownHostException, SocketException, IOException {
-    String hostAddress;
-    int tcpPort;
-    int udpPort;
+  public void setProtocol(Constants.Protocol protocol) {
+    // TODO: Send message to server to request switching to new protocol
+    this.protocol = protocol;
+  }
 
-    if (args.length != 3) {
-      System.out.println("ERROR: Provide 3 arguments");
-      System.out.println("\t(1) <hostAddress>: the address of the server");
-      System.out.println("\t(2) <tcpPort>: the port number for TCP connection");
-      System.out.println("\t(3) <udpPort>: the port number for UDP connection");
-      System.exit(-1);
+  public String send(String command) throws Exception {
+    if (protocol.equals(Constants.Protocol.UDP)) {
+      return sendUdp(command);
     }
+    return sendTcp(command);
+  }
 
-    hostAddress = args[0];
-    tcpPort = Integer.parseInt(args[1]);
-    udpPort = Integer.parseInt(args[2]);
+  private void establishConnection(int hostTcpPort) {
+    // TODO: Send tcpPort and udpPort to hostName:hostTcpPort
+    // Host gets the message, creates a thread to serve this client on those two ports
+  }
 
-    Scanner sc = new Scanner(System.in);
-    while(sc.hasNextLine()) {
-      String cmd = sc.nextLine();
-      sendUdpCommand(udpPort, cmd);
-    }
+  private String sendUdp(String command) throws Exception {
+    DatagramSocket dataSocket = new DatagramSocket();
+
+    byte[] outBuffer = command.getBytes();
+    DatagramPacket sPacket = new DatagramPacket(outBuffer, outBuffer.length, host, udpPort);
+    dataSocket.send(sPacket);
+
+    byte[] inBuffer = new byte[BUFFER_LENGTH];
+    DatagramPacket returnPacket = new DatagramPacket(inBuffer, BUFFER_LENGTH);
+    dataSocket.receive(returnPacket);
+    String response = new String(returnPacket.getData());
+    dataSocket.close();
+
+    return response;
+  }
+
+  private String sendTcp(String command) throws Exception {
+    return ""; // TODO
   }
 }
