@@ -73,14 +73,4 @@ public class Transaction {
         }
         return mergedTransaction;
     }
-
-    @Override
-    public String toString() {
-        StringBuilder name = new StringBuilder(String.format("'%s'\n", username));
-        if (canceled) {
-            name.append("[CANCELED]\n");
-        }
-        list().forEach(e -> name.append(e + "\n"));
-        return name.toString();
-    }
 }

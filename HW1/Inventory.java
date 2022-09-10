@@ -1,10 +1,8 @@
-import static java.util.stream.Collectors.toList;
-
 import java.io.FileReader;
 import java.io.BufferedReader;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.List;
+import java.util.stream.Collectors;
 
 public class Inventory {
 
@@ -25,46 +23,33 @@ public class Inventory {
         addTransaction(initialTransaction);
     }
 
-    /**
-     * @returns false if transactionId is not found
-     */
-    public boolean cancel(int transactionId) {
-        boolean validId = transactions.containsKey(transactionId);
-        if (validId) {
+    public String cancel(int transactionId) {
+        if (transactionId > 0 && transactions.containsKey(transactionId)) {
             transactions.get(transactionId).cancel();
+            return String.format("Order %d is canceled", transactionId);
         }
-        return validId;
-        // TODO: return structured response 'Order <id> is canceled'
-        // or '<id> not found, no such order'
+        return String.format("%d not found, no such order", transactionId);
     }
 
-    /**
-     * @returns the list of non-canceled transactions for this user, empty if no transactions.
-     */
-    public List<String> search(String username) {
-        return transactions.entrySet().stream()
+    public String search(String username) {
+        String result = transactions.entrySet().stream()
                 .filter(e -> !e.getValue().isCanceled() && e.getValue().getUsername().equals(username))
                 .map(e -> String.format("%d, %s", e.getKey(), e.getValue().singleItem()))
-                .collect(toList());
+                .collect(Collectors.joining("\n"));
 
-        // TODO: return 'No order found for <user-name>' instead of empty
+        return result.isEmpty() ? String.format("No order found for %s", username)
+                : result;
     }
 
-    /**
-     * @returns the transaction id or -1 if invalid
-     */
-    public int purchase(String username, String itemName, int quantity) {
+    public String purchase(String username, String itemName, int quantity) {
         Transaction t = new Transaction(username, itemName, quantity);
-        return addTransaction(t);
-        // TODO: return 'Not Available - Not enough items'
-        // or 'You order has been placed, <order-id> <user-name> <product-name> <quantity>'
+        int transactionId = addTransaction(t);
+        return transactionId == -1 ? "Not Available - Not enough items"
+                : String.format("You order has been placed, %d %s %s %d", transactionId, username, itemName, quantity);
     }
 
-    /**
-     * @return a list of items and their quantities remaining.
-     */
-    public List<String> list() {
-        return computeInventory().list();
+    public String list() {
+        return computeInventory().list().stream().collect(Collectors.joining("\n"));
     }
 
     private Transaction computeInventory() {
@@ -84,12 +69,7 @@ public class Inventory {
 
     @Override
     public String toString() {
-        StringBuilder name = new StringBuilder();
-        name.append("Transactions:\n\n");
-        transactions.entrySet().forEach(e -> name.append(String.format("(%d) %s\n", e.getKey(), e.getValue())));
-        name.append("\nInventory:\n");
-        name.append(computeInventory().toString());
-        return name.toString();
+        return list();
     }
 
     public static void main(String[] args) throws Exception {
@@ -97,15 +77,19 @@ public class Inventory {
 
         System.out.println(inventory.list());
 
-        inventory.purchase("juan", "phone", 5);
-        inventory.purchase("sammy", "camera", 9);
-        inventory.purchase("sammy", "xbox", 8);
+        System.out.println(inventory.purchase("juan", "phone", 5));
+        System.out.println(inventory.purchase("juan", "phone", 16));
+        System.out.println(inventory.purchase("sammy", "camera", 9));
+        System.out.println(inventory.purchase("sammy", "xbox", 8));
 
         System.out.println(inventory.list());
 
         System.out.println(inventory.search("juan"));
         System.out.println(inventory.search("sammy"));
-        inventory.cancel(2);
+
+        System.out.println(inventory.cancel(2));
+        System.out.println(inventory.cancel(4));
+
         System.out.println(inventory.search("sammy"));
         System.out.println(inventory.search("invalidUser"));
     }
