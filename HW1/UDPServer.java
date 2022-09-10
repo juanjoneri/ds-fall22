@@ -10,9 +10,9 @@ public class UDPServer extends Thread {
     DatagramSocket dataSocket;
     DatagramPacket dataPacket, returnPacket;
     int len;
-    CommandParser mParser;
+    CommandHandler mParser;
 
-    public UDPServer(Integer port, CommandParser parser) {
+    public UDPServer(Integer port, CommandHandler parser) {
         mParser = parser;
         len = 1024;
         try {
@@ -27,12 +27,13 @@ public class UDPServer extends Thread {
     public void run() {
         while (true) {
             try {
+                buf = new byte[len];
                 dataPacket = new DatagramPacket(buf, buf.length);
                 dataSocket.receive(dataPacket);
                 // String msg = new String(dataPacket.getData());
                 // System.out.print(msg);
 
-                String returnMessage = mParser.parseBuffer(dataPacket.getData());
+                String returnMessage = mParser.handle(dataPacket.getData()) + "\n";
 
                 returnPacket = new DatagramPacket(returnMessage.getBytes(),
                         returnMessage.length(),
@@ -53,7 +54,7 @@ public class UDPServer extends Thread {
             // String msg = new String(dataPacket.getData());
             // System.out.print(msg);
 
-            mParser.parseBuffer(dataPacket.getData());
+            mParser.handle(dataPacket.getData());
 
             returnPacket = new DatagramPacket(dataPacket.getData(),
                     dataPacket.getLength(),

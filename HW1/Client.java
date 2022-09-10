@@ -76,30 +76,7 @@ public class Client {
     Scanner sc = new Scanner(System.in);
     while(sc.hasNextLine()) {
       String cmd = sc.nextLine();
-      String[] tokens = cmd.split(" ");
-
-      if (tokens[0].equals("setmode")) {
-        // TODO: set the mode of communication for sending commands to the server 
-        // and display the name of the protocol that will be used in future
-      }
-      else if (tokens[0].equals("purchase")) {
-        System.out.println("CLIENT: Purchase if hit!");
-        System.out.println(cmd);
-        sendUdpCommand(udpPort, cmd);
-        // TODO: send appropriate command to the server and display the
-        // appropriate responses form the server
-      } else if (tokens[0].equals("cancel")) {
-        // TODO: send appropriate command to the server and display the
-        // appropriate responses form the server
-      } else if (tokens[0].equals("search")) {
-        // TODO: send appropriate command to the server and display the
-        // appropriate responses form the server
-      } else if (tokens[0].equals("list")) {
-        // TODO: send appropriate command to the server and display the
-        // appropriate responses form the server
-      } else {
-        System.out.println("ERROR: No such command");
-      }
+      sendUdpCommand(udpPort, cmd);
     }
   }
 }

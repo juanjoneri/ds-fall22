@@ -14,16 +14,12 @@ public class Server {
     int udpPort = Integer.parseInt(args[1]);
     String fileName = args[2];
 
-    // TODO: getters and setters for inventory map, how do we make this thread safe?
-
-    // udpServer(udpPort);
     Inventory inventory = new Inventory(fileName);
-    inventory.purchase("sammy", "xbox", 3);
     System.out.println(inventory);
 
-    CommandParser serverParser = new CommandParser(inventory);
+    CommandHandler handler = new CommandHandler(inventory);
 
-    UDPServer server = new UDPServer(udpPort, serverParser);
+    UDPServer server = new UDPServer(udpPort, handler);
     server.start();
   }
 }
