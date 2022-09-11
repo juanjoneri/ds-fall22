@@ -30,38 +30,24 @@ public class UDPServer extends Thread {
                 buf = new byte[len];
                 dataPacket = new DatagramPacket(buf, buf.length);
                 dataSocket.receive(dataPacket);
-                // String msg = new String(dataPacket.getData());
-                // System.out.print(msg);
 
-                String returnMessage = mParser.handle(dataPacket.getData()) + "\n";
+                UDPRequest request = new UDPRequest(dataPacket, this, mParser);
+                request.start();
 
-                returnPacket = new DatagramPacket(returnMessage.getBytes(),
-                        returnMessage.length(),
-                        dataPacket.getAddress(),
-                        dataPacket.getPort());
-                dataSocket.send(returnPacket);
             } catch (IOException e) {
                 System.err.println(e);
             }
         }
     }
 
-    // todo: make a funcion that can send a message
-    public boolean send(byte[] msg) {
-        try {
-            dataPacket = new DatagramPacket(buf, buf.length);
-            dataSocket.receive(dataPacket);
-            // String msg = new String(dataPacket.getData());
-            // System.out.print(msg);
-
-            mParser.handle(dataPacket.getData());
-
-            returnPacket = new DatagramPacket(dataPacket.getData(),
-                    dataPacket.getLength(),
-                    dataPacket.getAddress(),
-                    dataPacket.getPort());
-            dataSocket.send(returnPacket);
-        } catch (IOException e) {
+    public boolean send(DatagramPacket packetToSend) 
+    {
+        try
+        {
+            dataSocket.send(packetToSend);
+        }
+        catch (IOException e) 
+        {
             System.err.println(e);
             return false;
         }
