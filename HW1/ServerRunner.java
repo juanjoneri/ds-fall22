@@ -17,7 +17,6 @@ public class ServerRunner {
 
     Server server = new Server(port, handler);
 
-    System.out.println("Starting new thread for server.");
     server.start();
   }
 }

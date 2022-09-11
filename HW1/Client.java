@@ -27,7 +27,6 @@ public class Client {
   }
 
   public String send(String command) throws Exception {
-    System.out.println("Requested to send " + command);
     if (protocol.equals(Constants.Protocol.UDP)) {
       return sendUdp(command, udpPort);
     }
@@ -35,21 +34,13 @@ public class Client {
   }
 
   private void establishConnection(int hostTcpPort) throws Exception {
-    // TODO: use sendTcp
     sendUdp(String.format("connect %d %d", tcpPort, udpPort), hostTcpPort);
   }
 
   private String sendUdp(String command, int port) throws Exception {
-    System.out.println(String.format("sending %s to %d", command, port));
     DatagramSocket dataSocket = new DatagramSocket();
-
-    byte[] outBuffer = command.getBytes();
-    DatagramPacket sPacket = new DatagramPacket(outBuffer, outBuffer.length, host, port);
-    dataSocket.send(sPacket);
-
-    byte[] inBuffer = new byte[BUFFER_LENGTH];
-    DatagramPacket returnPacket = new DatagramPacket(inBuffer, BUFFER_LENGTH);
-    dataSocket.receive(returnPacket);
+    Constants.send(command, dataSocket, host, port);
+    DatagramPacket returnPacket = Constants.receive(dataSocket);
     String response = new String(returnPacket.getData());
     dataSocket.close();
 

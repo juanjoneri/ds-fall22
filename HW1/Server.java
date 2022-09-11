@@ -3,7 +3,7 @@ import java.net.DatagramSocket;
 
 /**
  * Listens forever for incoming client request for connection.
- * Starts a new RequestHandlelr thread for each new client.
+ * Starts a new RequestHandler thread for each new client.
  */
 public class Server extends Thread {
 
@@ -17,16 +17,11 @@ public class Server extends Thread {
 
     @Override
     public void run() {
-        System.out.println("Starting receiver thread.");
         while (true) {
             try {
                 String message = readUdp();
                 if (message.startsWith("connect")) {
-                    System.out.println("Starting request handler.");
-                    String[] tokens = message.trim().split(" ");
-                    int tcpPort = Integer.parseInt(tokens[1]);
-                    int udpPort = Integer.parseInt(tokens[2]);
-                    RequestHandler requestHandler = new RequestHandler(tcpPort, udpPort, commandHandler);
+                    RequestHandler requestHandler = buildRequestHanlder(message);
                     requestHandler.start();
                 }
             } catch (Exception e) {
@@ -37,28 +32,21 @@ public class Server extends Thread {
         }
     }
 
+    private RequestHandler buildRequestHanlder(String message) throws Exception {
+        String[] tokens = message.trim().split(" ");
+        int tcpPort = Integer.parseInt(tokens[1]);
+        int udpPort = Integer.parseInt(tokens[2]);
+        return new RequestHandler(tcpPort, udpPort, commandHandler);
+    }
+
     private String readUdp() throws Exception {
         System.out.println(String.format("Waiting for clients to join on %d", port));
 
-        byte[] inBuffer = new byte[Constants.BUFFER_LENGTH];
-        DatagramPacket dataPacket = new DatagramPacket(inBuffer, Constants.BUFFER_LENGTH);
-        DatagramSocket dataSocket = new DatagramSocket(port);
-        dataSocket.receive(dataPacket);
-
-        String response = new String(dataPacket.getData());
-
-        String returnMessage = "OK";
-        DatagramPacket returnPacket = new DatagramPacket(returnMessage.getBytes(),
-                returnMessage.length(),
-                dataPacket.getAddress(),
-                dataPacket.getPort());
-        dataSocket.send(returnPacket);
-
-        dataSocket.close();
-
-        System.out.println("Read udp " + response);
-
-        return response;
+        DatagramSocket socket = new DatagramSocket(port);
+        DatagramPacket packet = Constants.receive(socket);
+        String message = new String(packet.getData());
+        Constants.ack(socket, packet);
+        socket.close();
+        return message;
     }
-
 }
