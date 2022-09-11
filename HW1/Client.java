@@ -3,8 +3,6 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 
 public class Client {
-
-  private static final int BUFFER_LENGTH = 1024;
   
   private Constants.Protocol protocol = Constants.Protocol.UDP; // TODO: set to udp
   
@@ -48,6 +46,6 @@ public class Client {
   }
 
   private String sendTcp(String command, int port) throws Exception {
-    return ""; // TODO
+    return ""; // TODO handle sending TCP commands
   }
 }

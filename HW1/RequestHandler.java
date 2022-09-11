@@ -38,19 +38,12 @@ public class RequestHandler extends Thread {
     }
 
     private void handleUdp() throws Exception {
-        byte[] buf = new byte[1024];
-        DatagramPacket dataPacket = new DatagramPacket(buf, buf.length);
-        dataSocket.receive(dataPacket);
+        DatagramPacket dataPacket = Constants.receive(dataSocket);
         String returnMessage = commandHandler.handle(dataPacket.getData());
-        DatagramPacket returnPacket = new DatagramPacket(returnMessage.getBytes(),
-                returnMessage.length(),
-                dataPacket.getAddress(),
-                dataPacket.getPort());
-        dataSocket.send(returnPacket);
-
+        Constants.send(returnMessage, dataSocket, dataPacket);
     }
 
     private void handleTcp() throws Exception {
-
+        // TODO: handle receiving TCP commands
     }
 }
