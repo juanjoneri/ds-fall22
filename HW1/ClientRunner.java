@@ -5,7 +5,7 @@ public class ClientRunner {
         if (args.length != 4) {
           System.out.println("ERROR: Provide 4 arguments");
           System.out.println("\t(1) <hostName>: the address of the server");
-          System.out.println("\t(2) <hostTcpPort>: the TCP port number of the server");
+          System.out.println("\t(2) <hostPort>: the port number of the server");
           System.out.println("\t(3) <tcpPort>: the port number for TCP connection");
           System.out.println("\t(4) <udpPort>: the port number for UDP connection");
           System.exit(-1);
