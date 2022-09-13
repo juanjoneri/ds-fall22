@@ -1,5 +1,11 @@
+import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.io.InputStream;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 
 /**
  * Listens forever for incoming client request for connection.
@@ -19,9 +25,10 @@ public class Server extends Thread {
     public void run() {
         while (true) {
             try {
-                String message = readUdp();
+                Socket socket = readTCP();
+                String message = readFromSocket(socket);
                 if (message.startsWith("connect")) {
-                    RequestHandler requestHandler = buildRequestHanlder(message);
+                    RequestHandler requestHandler = buildRequestHanlder(message, socket);
                     requestHandler.start();
                 }
             } catch (Exception e) {
@@ -32,11 +39,11 @@ public class Server extends Thread {
         }
     }
 
-    private RequestHandler buildRequestHanlder(String message) throws Exception {
+    private RequestHandler buildRequestHanlder(String message, Socket socket) throws Exception {
         String[] tokens = message.trim().split(" ");
         int tcpPort = Integer.parseInt(tokens[1]);
         int udpPort = Integer.parseInt(tokens[2]);
-        return new RequestHandler(tcpPort, udpPort, commandHandler);
+        return new RequestHandler(udpPort, commandHandler, socket);
     }
 
     private String readUdp() throws Exception {
@@ -48,5 +55,41 @@ public class Server extends Thread {
         Constants.ack(socket, packet);
         socket.close();
         return message;
+    }
+
+    private Socket readTCP()
+    {
+        Socket socket = null;
+        try
+        {
+            ServerSocket listener = new ServerSocket(port);
+            if((socket=listener.accept())!=null)
+            {
+                System.out.println("tcpConnection Started" + socket.toString());                
+            }
+            listener.close();
+        }
+        catch(IOException ioe)
+        {
+            System.err.println(ioe);
+        }
+        return socket;
+    }
+
+    private String readFromSocket(Socket socket)
+    {
+        String returnString = "n/a";
+        try
+        {
+            InputStream input = socket.getInputStream();
+            BufferedReader readerBuf = new BufferedReader(new InputStreamReader(input));
+            returnString = readerBuf.readLine();
+            readerBuf.close();
+        }
+        catch(IOException ioe)
+        {
+            System.err.println(ioe);
+        }
+        return returnString;
     }
 }

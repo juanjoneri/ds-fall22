@@ -1,20 +1,21 @@
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.Socket;
 
 public class RequestHandler extends Thread {
 
-    private final int tcpPort;
     private final int udpPort;
     private final CommandHandler commandHandler;
 
     DatagramSocket dataSocket; // TODO
+    Socket mTcpSocket;
 
-    private Constants.Protocol protocol = Constants.Protocol.UDP; // TODO: Use TCP
+    private Constants.Protocol protocol = Constants.Protocol.UDP;
 
-    public RequestHandler(int tcpPort, int udpPort, CommandHandler commandHandler) throws Exception {
-        this.tcpPort = tcpPort;
+    public RequestHandler(int udpPort, CommandHandler commandHandler, Socket socket) throws Exception {
         this.udpPort = udpPort;
         this.commandHandler = commandHandler;
+        this.mTcpSocket = socket;
 
         dataSocket = new DatagramSocket(udpPort);
     }
