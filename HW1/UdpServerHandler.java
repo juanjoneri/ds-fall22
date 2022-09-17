@@ -22,9 +22,7 @@ public class UdpServerHandler extends Thread {
             try {
                 handleRequest();
             } catch (Exception e) {
-                System.out.println("Something whent wrong.");
-                e.printStackTrace();
-                System.exit(-1);
+                Constants.handleException(e);
             }
         }
     }

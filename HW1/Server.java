@@ -27,9 +27,7 @@ public class Server extends Thread {
                     tcpHanlder.start();
                 }
             } catch (Exception e) {
-                System.out.println("Something whent wrong.\n");
-                e.printStackTrace();
-                System.exit(-1);
+                Constants.handleException(e);
             }
         }
     }

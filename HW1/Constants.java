@@ -29,4 +29,10 @@ public class Constants {
     public static void ack(DatagramSocket socket, DatagramPacket dataPacket) throws Exception {
         send("OK", socket, dataPacket);
     }
+
+    public static void handleException(Exception e) {
+        System.out.println("Something went wrong.");
+        e.printStackTrace();
+        System.exit(-1);
+    }
 }

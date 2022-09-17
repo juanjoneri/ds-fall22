@@ -4,6 +4,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+/**
+ * Supports operations on {@link Transaction}s such as canceling, searching,
+ * listing, etc.
+ */
 public class Inventory {
 
     private ConcurrentHashMap<Integer, Transaction> transactions = new ConcurrentHashMap<>();

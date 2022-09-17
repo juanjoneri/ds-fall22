@@ -1,15 +1,14 @@
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.io.OutputStream;
 import java.io.PrintStream;
 import java.net.Socket;
 import java.util.Scanner;
 
 public class Client {
-  
-  private Constants.Protocol protocol = Constants.Protocol.UDP;
-  
+
+  private Constants.Protocol protocol = Constants.Protocol.TCP;
+
   private final InetAddress host;
 
   private final int tcpPort;
@@ -52,7 +51,7 @@ public class Client {
 
   private String sendTcp(String command) throws Exception {
     tcpSocket = new Socket(host.getHostAddress(), tcpPort);
-    Scanner input = new Scanner(tcpSocket.getInputStream()) ;
+    Scanner input = new Scanner(tcpSocket.getInputStream());
     PrintStream output = new PrintStream(tcpSocket.getOutputStream());
     output.println(command);
     String response = input.nextLine();

@@ -13,7 +13,6 @@ public class TcpServerHandler extends Thread {
 
     private final CommandHandler commandHandler;
     private final ServerSocket listener;
-    private Socket socket;
 
     public TcpServerHandler(int tcpPort, CommandHandler commandHandler) throws Exception {
         this.commandHandler = commandHandler;
@@ -22,27 +21,17 @@ public class TcpServerHandler extends Thread {
 
     @Override
     public void run() {
-        System.out.println("Starting TCP handler");
-        try {
-            System.out.println("Accepted TCP connection.");
-        } catch (Exception e) {
-            System.out.println("Something whent wrong.");
-            e.printStackTrace();
-            System.exit(-1);
-        }
         while (true) {
             try {
                 handleRequest();
             } catch (Exception e) {
-                System.out.println("Something whent wrong.");
-                e.printStackTrace();
-                System.exit(-1);
+                Constants.handleException(e);
             }
         }
     }
 
     private void handleRequest() throws Exception {
-        socket = listener.accept();
+        Socket socket = listener.accept();
 
         InputStream input = socket.getInputStream();
         OutputStream output = socket.getOutputStream();
@@ -51,11 +40,8 @@ public class TcpServerHandler extends Thread {
         PrintWriter writer = new PrintWriter(output, true);
 
         String inputLine = reader.readLine();
-        // System.out.println("TCP input " + inputLine);
         if (inputLine != null) {
-            System.out.println("TCP input not null " + inputLine);
             String returnMessage = commandHandler.handle(inputLine.getBytes());
-            System.out.println("returnMessage " + returnMessage);
             writer.println(returnMessage);
         }
         socket.close();

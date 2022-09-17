@@ -5,6 +5,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+/**
+ * Represents a transaction of items. For example purchase juan xbox 10
+ */
 public class Transaction {
 
     private ConcurrentHashMap<String, Integer> items = new ConcurrentHashMap<>();
