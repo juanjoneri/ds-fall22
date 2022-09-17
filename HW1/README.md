@@ -17,3 +17,22 @@ c. `cancel <order-id>` – cancels the order with the <order-id>. If there is no
 d. `search <user-name>` – returns all orders for the user. If no order is found for the user, the system responds with a message: `No order found for <user-name>`. Otherwise, list all orders of the users as `<order-id>, <product-name>, <quantity>`. Note that, you should print one line per order.
 
 e. `list` – lists all available products with quantities of the store. For each product, you should show `<product-name> <quantity>`. Note that, even if the product is sold out, you should also print the product with quantity 0. In addition, you should print one line per product. The products should be listed in the sorted order.
+
+## Solution
+
+### Server
+
+1. The entry point for the server is the `ServerRunner` class (can be run with the script `sh start_server.sh`). It requires 2 command line arguments: 1. a port number where the server will listen for new clients, 2. a relative path to the inventory path. ServerRunner reads those inputs, initializes a thread-safe `Inventory` class used to keep track of transactions, and starts a new thread `Server`.
+
+2. The `Server` class is a simple process that listens for messages with the pattern `connect <tcpPort> <udpPort>` on the port specified above. Once a new client issues that command, `Server` will start two new threads to handle TCP and UDP requests for that client.
+
+3. `TcpServerHandler` and `UdpServerHandler` are threads intended to handle the TCP and UDP requests respectively from a given client. Each time they get a request that matches one of the expected commands (`list`, `purchase`, etc) they update the `Inventory` accordingly.
+
+### Client
+
+1. The entry point for the client is the `ClientRunner` class (can be run with the script `sh start_client.sh`). It requires 4 command line arguments: 1. The hostname where to find the server, 2. the port number for the server (i.e. the second argument to ServerRunner), 3. the port number this client will use for TCP communication, 4. the port number this client will use for UDP communication.
+
+2. `ClientRunner` is a single-threaded application, it continuously reads from stdin and:
+  - if the input is `setmode U` it prompts the `Client` to switch the mode of subsequent communication to UDP
+  - if the input is `setmode T` it prompts the `Client` to switch the mode of subsequent communication to TCP
+  - else it calls `Client.send` which will send a TCP or UDP request to the server depending on the current mode that is set (TCP by default).
