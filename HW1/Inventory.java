@@ -1,5 +1,7 @@
 import java.io.FileReader;
 import java.io.BufferedReader;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -12,6 +14,7 @@ public class Inventory {
 
     private ConcurrentHashMap<Integer, Transaction> transactions = new ConcurrentHashMap<>();
     private AtomicInteger nextTransactionId = new AtomicInteger(0);
+    private Set<String> availableItems = new HashSet<>();
 
     public Inventory(String filePath) throws Exception {
         FileReader fileReader = new FileReader(filePath);
@@ -21,6 +24,7 @@ public class Inventory {
             String[] line = bufferedReader.readLine().split(" ");
             if (line.length > 1) {
                 initialTransaction.addItems(line[0], Integer.parseInt(line[1]));
+                availableItems.add(line[0]);
             }
         }
         bufferedReader.close();
@@ -46,6 +50,10 @@ public class Inventory {
     }
 
     public String purchase(String username, String itemName, int quantity) {
+        if (!availableItems.contains(itemName)) {
+            return "Not Available - We do not sell this product";
+        }
+
         Transaction t = new Transaction(username, itemName, quantity);
         int transactionId = addTransaction(t);
         return transactionId == -1 ? "Not Available - Not enough items"
