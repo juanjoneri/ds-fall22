@@ -21,8 +21,10 @@ public class Server extends Thread {
             try {
                 String message = readUdp();
                 if (message.startsWith("connect")) {
-                    RequestHandler requestHandler = buildRequestHanlder(message);
-                    requestHandler.start();
+                    UdpServerHandler udpHanlder = buildUdpServerHanlder(message);
+                    TcpServerHandler tcpHanlder = buildTcpServerHanlder(message);
+                    udpHanlder.start();
+                    tcpHanlder.start();
                 }
             } catch (Exception e) {
                 System.out.println("Something whent wrong.\n");
@@ -32,11 +34,16 @@ public class Server extends Thread {
         }
     }
 
-    private RequestHandler buildRequestHanlder(String message) throws Exception {
+    private UdpServerHandler buildUdpServerHanlder(String message) throws Exception {
+        String[] tokens = message.trim().split(" ");
+        int udpPort = Integer.parseInt(tokens[2]);
+        return new UdpServerHandler(udpPort, commandHandler);
+    }
+
+    private TcpServerHandler buildTcpServerHanlder(String message) throws Exception {
         String[] tokens = message.trim().split(" ");
         int tcpPort = Integer.parseInt(tokens[1]);
-        int udpPort = Integer.parseInt(tokens[2]);
-        return new RequestHandler(tcpPort, udpPort, commandHandler);
+        return new TcpServerHandler(tcpPort, commandHandler);
     }
 
     private String readUdp() throws Exception {
