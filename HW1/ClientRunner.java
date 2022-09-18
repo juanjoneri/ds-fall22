@@ -21,7 +21,7 @@ public class ClientRunner {
     Scanner sc = new Scanner(System.in);
 
     while (sc.hasNextLine()) {
-      String command = sc.nextLine().strip();
+      String command = sc.nextLine().trim();
       if (command.equals("setmode U")) {
         client.setProtocol(Constants.Protocol.UDP);
         System.out.println("Mode set to UDP");
