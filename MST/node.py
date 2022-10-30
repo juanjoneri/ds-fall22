@@ -1,23 +1,59 @@
+from collections import deque, namedtuple
 from enum import Enum
 from edge import Edge, EdgeType
-from fragment import Fragment
-from typing import Set, Optional
+from typing import Dict, Optional, Deque
 
-from decorators import message
+from decorators import message, procedure
+
+
+"""
+SE(m) edge type for node m
+SN state of node
+w(j) weight of edge j
+
+FN fragment identity
+LN fragment level
+
+best_edge
+best_wt
+test_edge
+in_branch: incoming branch from parent
+find_count
+
+queue: FIFO incoming msg queue
+
+"""
+
 
 class NodeState(Enum):
     SLEEPING = 1 # Initial state
     FIND = 2 # While looking for min weight outgoing edge
     FOUND = 3 # At all other times
+    
+class MessageType(Enum):
+    CONNECT = 1
+    TEST = 2
+    REPORT = 3
 
+Message = namedtuple('Message', ['type', 'args'])
 
 class Node:    
     def __init__(self, id: int) -> None:
-        self.state: NodeState = NodeState.SLEEPING
         self.id: int = id
-        self.edges: Set[Edge] = set()
+        
+        self.state: NodeState = NodeState.SLEEPING # SN
+        self.edges: Dict[int, Edge] = {}
+        self.level: int = 0 # LN
+        self.identity: float = 0 # FN
+        
         self.best_edge: Optional[Edge] = None
-        self.fragment = Fragment(0)
+        self.best_weight: float = float('inf')
+        self.test_edge: Optional[Edge] = None
+        self.in_branch: Optional[Edge] = None
+        self.find_count: int = 0
+        
+        self.message_queue: Deque[Message] = deque()
+        
     
     def __str__(self):
         name = f'({self.id})'
@@ -25,111 +61,157 @@ class Node:
             name += f'\n  {edge}'
         return name
     
-    def _find_edge(self, neighbor: 'Node') -> Optional[Edge]:
-        for edge in self.edges:
-            if edge.neighbor.id == neighbor.id:
-                return edge
-        
-        return None
-    
     def __hash__(self):
         return hash(self.id)
     
+    
     @property
     def min_basic(self) -> Optional[Edge]:
-        basic_edges = [e for e in self.edges if e.type == EdgeType.BASIC]
+        """Adjacent BASIC edge of minimum weight"""
+        basic_edges = [e for e in self.edges.values() if e.type == EdgeType.BASIC]
         if not any(basic_edges):
             return None
         return min(basic_edges)
     
     @property
     def leaf(self) -> bool:
-        return not any([e for e in self.edges if e.type == EdgeType.BRANCH])
+        """Node is a leaf of the current fragment"""
+        return not any([e for e in self.edges.values() if e.type == EdgeType.BRANCH])
     
-    @property
-    def inbound_edge(self) -> Optional[Edge]:
-        pass
-    
-    def awaken(self) -> None:
+    @procedure
+    def _wakeup(self) -> None:
         if self.state != NodeState.SLEEPING:
             return
         
         min_edge = self.min_basic
         min_edge.type = EdgeType.BRANCH
         self.state = NodeState.FOUND
-        min_edge.neighbor.connect(self)
+        min_edge.neighbor.connect(self.id, level=0)
 
-    @message        
-    def connect(self, other: 'Node'):
-        neighbor_edge = self._find_edge(other)
+    @message
+    def connect(self, neighbor_id: int, level: int):   
+        edge = self.edges[neighbor_id]
         
-        while self.fragment.level > other.fragment.level:
-            # wait until other fragment's level increases
-            continue
-        
-        if self.fragment.level < other.fragment.level:
-            # immediately absorve into older fragment
-            self.fragment = other.fragment
+        if level < self.level:
+            edge.type = EdgeType.BRANCH
+            edge.neighbor.initiate(self.level)
+            if self.state == NodeState.FIND:
+                self.find_count += 1
+        elif edge.type == EdgeType.BASIC:
+            self.message_queue.append(Message(MessageType.CONNECT, (neighbor_id, level)))
         else:
-            # two fragments of level L form a new fragment of level L+1
-            new_fragment = Fragment(self.fragment.level + 1, neighbor_edge.weight)
-            self.fragment = new_fragment
-            other.fragment = new_fragment
-            ## TODO: both nodes should broadcast initiate
+            edge.neighbor.initiate(self.id, self.level + 1, edge.weight, NodeState.FIND)
             
     @message
-    def initiate(self, fragment: Fragment):
-        self.fragment = fragment
-        self.state = NodeState.FIND
-        for edge in self.edges:
+    def initiate(self, neighbor_id: int, level: int, identity: float, state: NodeState):
+        self.level = level
+        self.identity = identity
+        self.state = state
+        self.in_branch = self.edges[neighbor_id]
+        
+        for i in self.edges.keys() - {neighbor_id}:
+            edge = self.edges[i]
             if edge.type == EdgeType.BRANCH:
-                edge.neighbor.initiate(fragment)
-                
-        while True:
-            min_edge = self.min_basic
-            if min_edge is None:
-                break
+                edge.neighbor.initiate(self.id, level, identity, state)
+                if state == NodeState.FIND:
+                    self.find_count += 1
             
-            if min_edge.test():
-                break
-            else:
-                min_edge.type = EdgeType.REJECTED
-                
-        if self.leaf:
-            pass
+        if state == NodeState.FIND:
+            self._test()
+              
+  
+    @procedure
+    def _test(self):
+        test_edge = self.min_basic
+        if test_edge is not None:
+            self.test_edge = test_edge
+            test_edge.neighbor.test(self.id, self.level, self.identity)
+        else:
+            self._report()
+        
 
+    @message
+    def test(self, neighbor_id: int, level: int, identity: float):
+        edge = self.edges[neighbor_id]
         
+        if level > self.level:
+            self.message_queue.append(Message(MessageType.TEST, (neighbor_id, level, identity)))
+        elif level != self.level:
+            edge.neighbor.accept(self.id)
+        else:
+            if edge.type == EdgeType.BASIC:
+                edge.type = EdgeType.REJECTED
+            
+            if self.test_edge != edge:
+                edge.neighbor.reject(self.id)
+            else:
+                self._test()         
+        
+    
     @message
-    def report(self, w: float):
-        pass
+    def accept(self, neighbor_id: int):
+        edge = self.edges[neighbor_id]
+        
+        self.test_edge = None
+        if edge.weight < self.best_weight:
+            self.best_edge = edge
+            self.best_weight = edge.weight
+            
+        self._report()
+        
+    
+    @message
+    def reject(self, neighbor_id: int):
+        edge = self.edges[neighbor_id]
+        
+        if edge.type == EdgeType.BASIC:
+            edge.type = EdgeType.REJECTED
+            self._test()
     
     
+    @procedure
+    def _report(self):
+        if (self.find_count == 0) and (self.test_edge is None):
+            self.state = NodeState.FOUND
+            self.in_branch.report(self.id, self.best_weight)
+    
     @message
-    def change_core(self):
-        pass
+    def report(self, neighbor_id: int, weight: float):
+        if self.in_branch != self.edges[neighbor_id]:
+            self.find_count -= 1
+            if weight < self.best_weight:
+                self.best_weight = weight
+                self.best_edge = self.edges[neighbor_id]
+                self._report()
+            elif self.state == NodeState.FIND:
+                self.message_queue.append(Message(MessageType.REPORT, (neighbor_id, weight)))
+            elif weight > self.best_weight:
+                self._change_root()
+            elif weight == self.best_weight == float('inf'):
+                print("HALT")
+            
+    
+    @procedure
+    def _change_root(self):
+        if self.best_edge.type == EdgeType.BRANCH:
+            self.best_edge.neighbor.change_root()
+        else:
+            self.best_edge.neighbor.connect(self.id, self.level)
+            self.best_edge.type = EdgeType.BRANCH
+    
+    @message
+    def change_root(self):
+        self._change_root()
         
         
                 
-    @message
-    def test(self, other: 'Node'):
-        
-        while self.fragment.level < other.fragment.level:
-            # wait until fragment's level increases
-            continue
-        
-        if self.fragment.core == other.fragment.core:
-            self._find_edge(other).type == EdgeType.REJECTED
-            return False
-        
-        elif self.fragment.level >= other.fragment.level:
-            return True
             
             
         
         
 def add_edge(n1: Node, n2: Node, weight: float) -> None:
     e1, e2 = Edge(weight, n2), Edge(weight, n1)
-    n1.edges.add(e1)
-    n2.edges.add(e2)
+    n1.edges[n2.id] = e1
+    n2.edges[n1.id] = e2
     return e1, e2
     
