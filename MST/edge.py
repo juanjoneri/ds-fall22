@@ -21,4 +21,4 @@ class Edge:
         return hash((self.weight, self.neighbor))
     
     def __str__(self):
-        return f'-[{self.weight}]-({self.neighbor.id})'
+        return f'-[{self.type}:{self.weight}]-({self.neighbor.id})'

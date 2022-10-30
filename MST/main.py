@@ -17,4 +17,12 @@ if __name__ == '__main__':
     add_edge(node_4, node_6, 3.7)
     add_edge(node_5, node_6, 2.1)
     
-    node_1.awaken()
+    node_1._wakeup()
+    print(node_1)
+    print(node_2)
+    print(node_3)
+    print(node_4)
+    print(node_5)
+    print(node_6)
+    
+    print(node_1.message_queue)

@@ -3,28 +3,6 @@ from enum import Enum
 from edge import Edge, EdgeType
 from typing import Dict, Optional, Deque
 
-from decorators import message, procedure
-
-
-"""
-SE(m) edge type for node m
-SN state of node
-w(j) weight of edge j
-
-FN fragment identity
-LN fragment level
-
-best_edge
-best_wt
-test_edge
-in_branch: incoming branch from parent
-find_count
-
-queue: FIFO incoming msg queue
-
-"""
-
-
 class NodeState(Enum):
     SLEEPING = 1 # Initial state
     FIND = 2 # While looking for min weight outgoing edge
@@ -36,6 +14,33 @@ class MessageType(Enum):
     REPORT = 3
 
 Message = namedtuple('Message', ['type', 'args'])
+
+def procedure(func):
+    def wrapper(*args, **kwargs):
+        node = args[0]
+        func(*args, **kwargs)
+        # Currently causing an infinite loop
+        # if any(node.message_queue):
+        #     next_message = node.message_queue.pop()
+        #     print(f'message {next_message} left in the queue')
+        #     match next_message.type:
+        #         case MessageType.CONNECT:
+        #             node.connect(*next_message.args)
+        #         case MessageType.TEST:
+        #             node.test(*next_message.args)
+        #         case MessageType.REPORT:
+        #             node.report(*next_message.args)
+    
+    return wrapper
+
+def message(func):
+    @procedure
+    def wrapper(*args, **kwargs):
+        node = args[0]
+        node._wakeup()
+        func(*args, **kwargs)
+
+    return wrapper
 
 class Node:    
     def __init__(self, id: int) -> None:
@@ -57,7 +62,7 @@ class Node:
     
     def __str__(self):
         name = f'({self.id})'
-        for edge in self.edges:
+        for edge in self.edges.values():
             name += f'\n  {edge}'
         return name
     
@@ -72,11 +77,6 @@ class Node:
         if not any(basic_edges):
             return None
         return min(basic_edges)
-    
-    @property
-    def leaf(self) -> bool:
-        """Node is a leaf of the current fragment"""
-        return not any([e for e in self.edges.values() if e.type == EdgeType.BRANCH])
     
     @procedure
     def _wakeup(self) -> None:
@@ -94,7 +94,7 @@ class Node:
         
         if level < self.level:
             edge.type = EdgeType.BRANCH
-            edge.neighbor.initiate(self.level)
+            edge.neighbor.initiate(self.id, self.level, self.identity, self.state)
             if self.state == NodeState.FIND:
                 self.find_count += 1
         elif edge.type == EdgeType.BASIC:
@@ -202,11 +202,6 @@ class Node:
     @message
     def change_root(self):
         self._change_root()
-        
-        
-                
-            
-            
         
         
 def add_edge(n1: Node, n2: Node, weight: float) -> None:
