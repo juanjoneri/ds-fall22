@@ -18,18 +18,8 @@ Message = namedtuple('Message', ['type', 'args'])
 def procedure(func):
     def wrapper(*args, **kwargs):
         node = args[0]
+        node._process_queue()
         func(*args, **kwargs)
-        # Currently causing an infinite loop
-        # if any(node.message_queue):
-        #     next_message = node.message_queue.pop()
-        #     print(f'{node.id}: message {next_message} left in the queue')
-        #     match next_message.type:
-        #         case MessageType.CONNECT:
-        #             node.connect(*next_message.args)
-        #         case MessageType.TEST:
-        #             node.test(*next_message.args)
-        #         case MessageType.REPORT:
-        #             node.report(*next_message.args)
     
     return wrapper
 
@@ -68,6 +58,18 @@ class Node:
     
     def __hash__(self):
         return hash(self.id)
+    
+    def _process_queue(self):
+        if any(self.message_queue):
+            next_message = self.message_queue.pop()
+            print(f'{self.id}: message {next_message} left in the queue')
+            match next_message.type:
+                case MessageType.CONNECT:
+                    self.connect(*next_message.args)
+                case MessageType.TEST:
+                    self.test(*next_message.args)
+                case MessageType.REPORT:
+                    self.report(*next_message.args)
     
     
     @property

@@ -1,35 +1,40 @@
-from node import Node
-from edge import Edge
-
-        
-def add_edge(n1: Node, n2: Node, weight: float) -> None:
-    e1, e2 = Edge(weight, n2), Edge(weight, n1)
-    n1.edges[n2.id] = e1
-    n2.edges[n1.id] = e2
-    return e1, e2
+from threads import NodeThread, Message, MessageType
 
 if __name__ == '__main__':
-    node_1 = Node(1)
-    node_2 = Node(2)
-    node_3 = Node(3)
-    node_4 = Node(4)
-    node_5 = Node(5)
-    node_6 = Node(6)
+    node_1 = NodeThread(1)
+    node_2 = NodeThread(2)
+    node_3 = NodeThread(3)
+    node_4 = NodeThread(4)
+    node_5 = NodeThread(5)
+    node_6 = NodeThread(6)
     
-    e1, _ = add_edge(node_1, node_2, 1.1)
-    e2, _ = add_edge(node_1, node_3, 1.7)
-    add_edge(node_1, node_5, 2.6)
-    add_edge(node_3, node_5, 3.8)
-    add_edge(node_2, node_4, 3.1)
-    add_edge(node_4, node_6, 3.7)
-    add_edge(node_5, node_6, 2.1)
+    node_1.add_neighbor(1.1, node_2)
+    node_1.add_neighbor(1.7, node_3)
+    node_1.add_neighbor(2.6, node_5)
+    node_3.add_neighbor(3.8, node_5)
+    node_2.add_neighbor(3.1, node_4)
+    node_4.add_neighbor(3.7, node_6)
+    node_5.add_neighbor(2.1, node_6)
     
-    node_1._wakeup()
-    print(node_1)
-    print(node_2)
-    print(node_3)
-    print(node_4)
-    print(node_5)
-    print(node_6)
+    node_1.in_queue.put(Message(MessageType.WAKE_UP, None))
     
-    print(node_1.message_queue)
+    node_1.start()
+    node_2.start()
+    node_3.start()
+    node_4.start()
+    node_5.start()
+    node_6.start()
+    
+    node_1.join()
+    node_2.join()
+    node_3.join()
+    node_4.join()
+    node_5.join()
+    node_6.join()
+    
+    print(node_1.node)
+    print(node_2.node)
+    print(node_3.node)
+    print(node_4.node)
+    print(node_5.node)
+    print(node_6.node)
