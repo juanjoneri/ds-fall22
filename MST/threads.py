@@ -275,6 +275,6 @@ class NodeThread(Thread):
                 self.in_queue.task_done()
             elif exit < 10:
                 exit += 1
-                sleep(0.5)
+                sleep(0.1)
             else:
                 break
