@@ -45,9 +45,6 @@ class Edge:
     def _send(self, message: Message) -> None:
         self.neighbor_q.put(message)
         
-    def wake_up(self):
-        self._send(Message(MessageType.WAKE_UP))
-        
     def connect(self, *args):
         self._send(Message(MessageType.CONNECT, args))
         
@@ -77,7 +74,7 @@ class NodeState(Enum):
 def message(func):
     def wrapper(*args, **kwargs):
         node = args[0]
-        node.wakeup()
+        node.wake_up()
         func(*args, **kwargs)
 
     return wrapper
@@ -113,13 +110,14 @@ class Node:
         if any(basic_edges):
             return min(basic_edges)
         
-    def wakeup(self) -> None:
+    def wake_up(self) -> None:
         if self.state != NodeState.SLEEPING:
             return
         
-        self._wakeup()
+        self._wake_up()
     
-    def _wakeup(self) -> None:
+    def _wake_up(self) -> None:
+        print(f'{self.id} woke up')
         min_edge = self.min_basic
         min_edge.type = EdgeType.BRANCH
         self.level = 0
@@ -238,7 +236,6 @@ class NodeThread(Thread):
     
     def __init__(self, id: int) -> None:
         super().__init__()
-        self.thread_id: int = id
         self.in_queue: Queue = Queue()
         self.node: Node = Node(id, self.in_queue)
         
@@ -252,11 +249,11 @@ class NodeThread(Thread):
         while True:
             if not self.in_queue.empty():
                 message = self.in_queue.get()
-                print(f'{self.thread_id} working on {message.type} with {message.args}')
+                print(f'{self.node.id} processing {message.type}:{message.args}')
                 
                 match message.type:
                     case MessageType.WAKE_UP:
-                        self.node.wakeup()
+                        self.node.wake_up()
                     case MessageType.CONNECT:
                         self.node.connect(*message.args)
                     case MessageType.INITIATE:
