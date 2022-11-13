@@ -1,5 +1,12 @@
-from node import Node, add_edge
+from node import Node
+from edge import Edge
 
+        
+def add_edge(n1: Node, n2: Node, weight: float) -> None:
+    e1, e2 = Edge(weight, n2), Edge(weight, n1)
+    n1.edges[n2.id] = e1
+    n2.edges[n1.id] = e2
+    return e1, e2
 
 if __name__ == '__main__':
     node_1 = Node(1)

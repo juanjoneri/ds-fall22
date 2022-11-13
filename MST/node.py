@@ -22,7 +22,7 @@ def procedure(func):
         # Currently causing an infinite loop
         # if any(node.message_queue):
         #     next_message = node.message_queue.pop()
-        #     print(f'message {next_message} left in the queue')
+        #     print(f'{node.id}: message {next_message} left in the queue')
         #     match next_message.type:
         #         case MessageType.CONNECT:
         #             node.connect(*next_message.args)
@@ -61,7 +61,7 @@ class Node:
         
     
     def __str__(self):
-        name = f'({self.id})'
+        name = f'(id:{self.id}, level:{self.level}, identity:{self.identity})'
         for edge in self.edges.values():
             name += f'\n  {edge}'
         return name
@@ -85,6 +85,7 @@ class Node:
         
         min_edge = self.min_basic
         min_edge.type = EdgeType.BRANCH
+        self.level = 0
         self.state = NodeState.FOUND
         min_edge.neighbor.connect(self.id, level=0)
 
@@ -98,7 +99,7 @@ class Node:
             if self.state == NodeState.FIND:
                 self.find_count += 1
         elif edge.type == EdgeType.BASIC:
-            self.message_queue.append(Message(MessageType.CONNECT, (neighbor_id, level)))
+            self.message_queue.appendleft(Message(MessageType.CONNECT, (neighbor_id, level)))
         else:
             edge.neighbor.initiate(self.id, self.level + 1, edge.weight, NodeState.FIND)
             
@@ -127,6 +128,7 @@ class Node:
             self.test_edge = test_edge
             test_edge.neighbor.test(self.id, self.level, self.identity)
         else:
+            self.test_edge = None
             self._report()
         
 
@@ -135,8 +137,8 @@ class Node:
         edge = self.edges[neighbor_id]
         
         if level > self.level:
-            self.message_queue.append(Message(MessageType.TEST, (neighbor_id, level, identity)))
-        elif level != self.level:
+            self.message_queue.appendleft(Message(MessageType.TEST, (neighbor_id, level, identity)))
+        elif identity != self.identity:
             edge.neighbor.accept(self.id)
         else:
             if edge.type == EdgeType.BASIC:
@@ -173,7 +175,7 @@ class Node:
     def _report(self):
         if (self.find_count == 0) and (self.test_edge is None):
             self.state = NodeState.FOUND
-            self.in_branch.report(self.id, self.best_weight)
+            self.in_branch.neighbor.report(self.id, self.best_weight)
     
     @message
     def report(self, neighbor_id: int, weight: float):
@@ -184,7 +186,7 @@ class Node:
                 self.best_edge = self.edges[neighbor_id]
                 self._report()
             elif self.state == NodeState.FIND:
-                self.message_queue.append(Message(MessageType.REPORT, (neighbor_id, weight)))
+                self.message_queue.appendleft(Message(MessageType.REPORT, (neighbor_id, weight)))
             elif weight > self.best_weight:
                 self._change_root()
             elif weight == self.best_weight == float('inf'):
@@ -202,11 +204,4 @@ class Node:
     @message
     def change_root(self):
         self._change_root()
-        
-        
-def add_edge(n1: Node, n2: Node, weight: float) -> None:
-    e1, e2 = Edge(weight, n2), Edge(weight, n1)
-    n1.edges[n2.id] = e1
-    n2.edges[n1.id] = e2
-    return e1, e2
     

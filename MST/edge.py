@@ -12,7 +12,7 @@ class Edge:
         self.neighbor: 'Node' = neighbor
         
     def __eq__(self, other: 'Edge'):
-        return self.weight == other.weight
+        return (other is not None) and (self.weight == other.weight)
     
     def __lt__(self, other: 'Edge'):
         return self.weight < other.weight
