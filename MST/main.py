@@ -16,7 +16,8 @@ if __name__ == '__main__':
     node_4.add_neighbor(3.7, node_6)
     node_5.add_neighbor(2.1, node_6)
     
-    node_1.in_queue.put(Message(MessageType.WAKE_UP, None))
+    # node_1.in_queue.put(Message(MessageType.WAKE_UP, None))
+    node_5.in_queue.put(Message(MessageType.WAKE_UP, None))
     
     node_1.start()
     node_2.start()

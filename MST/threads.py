@@ -99,6 +99,8 @@ class Node:
         name = f'(id:{self.id}, level:{self.level}, identity:{self.identity}, in_q:{self.in_queue.qsize()})'
         for edge in self.edges.values():
             name += f'\n  {edge}'
+            if edge == self.in_branch:
+                name += '*'
         return name
     
     def __hash__(self):
@@ -144,6 +146,8 @@ class Node:
         self.identity = identity
         self.state = state
         self.in_branch = self.edges[neighbor_id]
+        self.best_edge = None
+        self.best_weight = float('inf')
         
         for i in self.edges.keys() - {neighbor_id}:
             edge = self.edges[i]
@@ -157,7 +161,7 @@ class Node:
             
     def _test(self):
         test_edge = self.min_basic
-        if test_edge is not None:
+        if test_edge != None:
             self.test_edge = test_edge
             test_edge.test(self.id, self.level, self.identity)
         else:
@@ -201,7 +205,7 @@ class Node:
             self._test()
             
     def _report(self):
-        if (self.find_count == 0) and (self.test_edge is None):
+        if (self.find_count == 0) and (self.test_edge == None):
             self.state = NodeState.FOUND
             self.in_branch.report(self.id, self.best_weight)
     
@@ -212,13 +216,13 @@ class Node:
             if weight < self.best_weight:
                 self.best_weight = weight
                 self.best_edge = self.edges[neighbor_id]
-                self._report()
-            elif self.state == NodeState.FIND:
-                self.in_queue.put(Message(MessageType.REPORT, (neighbor_id, weight)))
-            elif weight > self.best_weight:
-                self._change_root()
-            elif weight == self.best_weight == float('inf'):
-                print("HALT")
+            self._report()
+        elif self.state == NodeState.FIND:
+            self.in_queue.put(Message(MessageType.REPORT, (neighbor_id, weight)))
+        elif weight > self.best_weight:
+            self._change_root()
+        elif weight == self.best_weight == float('inf'):
+            print("HALT")
                 
     def _change_root(self):
         if self.best_edge.type == EdgeType.BRANCH:
@@ -247,6 +251,7 @@ class NodeThread(Thread):
     def run(self):
         exit = 0
         while True:
+            sleep(0.1)
             if not self.in_queue.empty():
                 message = self.in_queue.get()
                 print(f'{self.node.id} processing {message.type}:{message.args}')
@@ -272,6 +277,5 @@ class NodeThread(Thread):
                 self.in_queue.task_done()
             elif exit < 10:
                 exit += 1
-                sleep(0.1)
             else:
                 break

@@ -1,0 +1,55 @@
+To initiate the program, any process needs to send an 'init' message to its left neighbor, and gets propagated until it reaches the leftmost process (the leftmost process can skip this step)
+Once the leftmost process gets the 'init' message, it begin the leader election by sending an 'election' message with its own pid to its right neighbor
+Any process that gets an 'election' message from its left neighbor, either forwards it to its right neighbor if its id is lower than the incoming request, otherwise its sends its own id
+Once the 'election' message reaches the rightmost process, it is known that leader id will be the largest between the incoming id and its own id.
+Finally the rightmost process can proceed to forward the leader id to its left neighbor so that each receiving process can update their knowledge of the leader id, and forward the message until it reaches the left most process
+
+
+Pi::
+  
+  var
+    myid: integer
+    leaderid: integer initially null
+    leftmost: boolean initially true if no left neighbor
+    rightmost: boolean initially true if no right neighbor
+
+
+  To initiate election:
+    if leftmost:
+      send (election, myid) to right neighbor
+    else:
+      send (init) to left neighbor
+    
+
+  Upon receiving message (init) from right neighbor
+    if leftmost:
+      send (election, myid) to right neighbor
+      return
+    send (init) to left neighbor
+      
+
+  Upon receiving message (election, otherid) from left neighbor
+    if rightmost:
+      if otherid < myid:
+        leaderid = myid
+      else:
+        leaderid = otherid
+      
+      send (leader, leaderid) to left neighbor
+      return
+
+
+    if otherid < myid:
+      send (election, myid) to right neighbor
+    else:
+      send (election, otherid) to right neighbor
+
+
+  Upon receiving message (leader, leaderid) from right neighbor
+    leaderid = leaderid
+    
+    if !leftmost:
+      send (leader, leaderid) to left neighbor
+      
+    
+      
