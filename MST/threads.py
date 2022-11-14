@@ -124,6 +124,7 @@ class Node:
         min_edge.type = EdgeType.BRANCH
         self.level = 0
         self.state = NodeState.FOUND
+        self.find_count = 0
         min_edge.connect(self.id, 0)
         
     @message
@@ -202,7 +203,8 @@ class Node:
         
         if edge.type == EdgeType.BASIC:
             edge.type = EdgeType.REJECTED
-            self._test()
+        
+        self._test()
             
     def _report(self):
         if (self.find_count == 0) and (self.test_edge == None):
@@ -253,6 +255,7 @@ class NodeThread(Thread):
         while True:
             sleep(0.1)
             if not self.in_queue.empty():
+                exit = 0
                 message = self.in_queue.get()
                 print(f'{self.node.id} processing {message.type}:{message.args}')
                 
