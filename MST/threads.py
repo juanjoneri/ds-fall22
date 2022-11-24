@@ -15,6 +15,7 @@ class MessageType(Enum):
     REJECT = 6
     REPORT = 7
     CHANGE_ROOT = 8
+    HALT = 9
 
 Message = namedtuple('Message', ['type', 'args'])
 
@@ -224,7 +225,7 @@ class Node:
         elif weight > self.best_weight:
             self._change_root()
         elif weight == self.best_weight == float('inf'):
-            print("HALT")
+            self.in_queue.put(Message(MessageType.HALT, None))
                 
     def _change_root(self):
         if self.best_edge.type == EdgeType.BRANCH:
@@ -253,7 +254,6 @@ class NodeThread(Thread):
     def run(self):
         exit = 0
         while True:
-            sleep(0.1)
             if not self.in_queue.empty():
                 exit = 0
                 message = self.in_queue.get()
@@ -276,9 +276,13 @@ class NodeThread(Thread):
                         self.node.report(*message.args)
                     case MessageType.CHANGE_ROOT:
                         self.node.change_root(*message.args)
+                    case MessageType.HALT:
+                        self.in_queue.task_done()
+                        return
                 
                 self.in_queue.task_done()
-            elif exit < 10:
+            elif exit < 3:
+                sleep(0.1)
                 exit += 1
             else:
                 break
