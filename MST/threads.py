@@ -257,7 +257,7 @@ class NodeThread(Thread):
             if not self.in_queue.empty():
                 exit = 0
                 message = self.in_queue.get()
-                print(f'{self.node.id} processing {message.type}:{message.args}')
+                # print(f'{self.node.id} processing {message.type}:{message.args}')
                 
                 match message.type:
                     case MessageType.WAKE_UP:
