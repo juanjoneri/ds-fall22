@@ -5,7 +5,8 @@ from enum import Enum
 from typing import Dict
 from time import sleep
 from typing import Dict, Optional
- 
+import networkx as nx
+
 class MessageType(Enum):
     WAKE_UP = 1
     CONNECT = 2
@@ -286,3 +287,28 @@ class NodeThread(Thread):
                 exit += 1
             else:
                 break
+            
+            
+def solve(G):
+    nodes = {id: NodeThread(id) for id in G.nodes()}
+    for edge in G.edges.data():
+        x, y, data = edge
+        nodes[x].add_neighbor(data['weight'], nodes[y])
+    
+    nodes[1].in_queue.put(Message(MessageType.WAKE_UP, None))
+        
+    for node in nodes.values():
+        node.start()
+    
+    for node in nodes.values():
+        node.join()
+    
+    solution = nx.Graph()
+    solution.add_nodes_from(nodes.keys())
+    
+    for node in nodes.values():
+        edge = node.node.in_branch
+        if edge is not None:
+            solution.add_edge(node.node.id, edge.neighbor_id, weight=edge.weight)
+    
+    return solution
