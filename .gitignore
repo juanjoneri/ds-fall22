@@ -25,3 +25,4 @@ hs_err_pid*
 __pycache__/
 MST/__pycache__/
 *.py[cod]
+MST/testing/
