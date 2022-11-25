@@ -6,6 +6,7 @@ from typing import Dict
 from time import sleep
 from typing import Dict, Optional
 import networkx as nx
+import random
 
 class MessageType(Enum):
     WAKE_UP = 1
@@ -289,13 +290,15 @@ class NodeThread(Thread):
                 break
             
             
-def solve(G):
+def solve(G, seeds=1):
     nodes = {id: NodeThread(id) for id in G.nodes()}
     for edge in G.edges.data():
         x, y, data = edge
         nodes[x].add_neighbor(data['weight'], nodes[y])
     
-    nodes[1].in_queue.put(Message(MessageType.WAKE_UP, None))
+    seeds = random.sample(nodes.keys(), seeds)
+    for node_id in seeds:
+        nodes[node_id].in_queue.put(Message(MessageType.WAKE_UP, None))
         
     for node in nodes.values():
         node.start()

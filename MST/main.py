@@ -32,5 +32,5 @@ if __name__ == '__main__':
     T = nx.minimum_spanning_tree(G)
     draw(G, T, 'library')
     
-    T2 = solve(G)
+    T2 = solve(G, 2)
     draw(G, T2, 'custom')
