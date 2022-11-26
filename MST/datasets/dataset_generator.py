@@ -32,6 +32,10 @@ def _init(nodes, neighbors=5):
     coordinates = dict(list(enumerate(map(tuple, nodes))))
     return _build_graph(nodes, neighbors), coordinates
 
+def _init_blobs(n_nodes, centers, std):
+    nodes, _ = datasets.make_blobs(n_samples=n_nodes, centers=centers, cluster_std=std)
+    return _init(nodes)
+
 def _init_rand(n_nodes):
     nodes = np.random.rand(n_nodes, 2)
     return _init(nodes)
@@ -72,7 +76,7 @@ def _save_dataset(G, coordinates, edges, output_file):
 
 if __name__ == '__main__':
 
-    for size in (100,):
+    for size in (10,):
         # Rand
         G, coordinates = _init_rand(size)
         _save_dataset(G, coordinates, G.edges, f'rand-{size}')

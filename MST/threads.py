@@ -74,7 +74,7 @@ class NodeState(Enum):
     FIND = 2 # While looking for min weight outgoing edge
     FOUND = 3 # At all other times
 
-def message(func):
+def wakup(func):
     def wrapper(*args, **kwargs):
         node = args[0]
         node.wake_up()
@@ -130,7 +130,7 @@ class Node:
         self.find_count = 0
         min_edge.connect(self.id, 0)
         
-    @message
+    @wakup
     def connect(self, neighbor_id: int, level: int):   
         edge = self.edges[neighbor_id]
         
@@ -144,7 +144,6 @@ class Node:
         else:
             edge.initiate(self.id, self.level + 1, edge.weight, NodeState.FIND)
             
-    @message
     def initiate(self, neighbor_id: int, level: int, identity: float, state: NodeState):
         self.level = level
         self.identity = identity
@@ -172,7 +171,7 @@ class Node:
             self.test_edge = None
             self._report()
             
-    @message
+    @wakup
     def test(self, neighbor_id: int, level: int, identity: float):
         edge = self.edges[neighbor_id]
         
@@ -189,7 +188,6 @@ class Node:
             else:
                 self._test()
                 
-    @message
     def accept(self, neighbor_id: int):
         edge = self.edges[neighbor_id]
         
@@ -200,7 +198,6 @@ class Node:
             
         self._report()
         
-    @message
     def reject(self, neighbor_id: int):
         edge = self.edges[neighbor_id]
         
@@ -214,7 +211,6 @@ class Node:
             self.state = NodeState.FOUND
             self.in_branch.report(self.id, self.best_weight)
     
-    @message  
     def report(self, neighbor_id: int, weight: float):
         if self.in_branch != self.edges[neighbor_id]:
             self.find_count -= 1
@@ -236,7 +232,6 @@ class Node:
             self.best_edge.connect(self.id, self.level)
             self.best_edge.type = EdgeType.BRANCH
             
-    @message
     def change_root(self):
         self._change_root()
 
@@ -256,10 +251,11 @@ class NodeThread(Thread):
     def run(self):
         exit = 0
         while True:
+            sleep(0.1)
             if not self.in_queue.empty():
                 exit = 0
                 message = self.in_queue.get()
-                # print(f'{self.node.id} processing {message.type}:{message.args}')
+                print(f'{self.node.id} processing {message.type}:{message.args}')
                 
                 match message.type:
                     case MessageType.WAKE_UP:
@@ -283,8 +279,7 @@ class NodeThread(Thread):
                         return
                 
                 self.in_queue.task_done()
-            elif exit < 3:
-                sleep(0.1)
+            elif exit < 10:
                 exit += 1
             else:
                 break
