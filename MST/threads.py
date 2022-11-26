@@ -222,7 +222,7 @@ class Node:
             self.in_queue.put(Message(MessageType.REPORT, (neighbor_id, weight)))
         elif weight > self.best_weight:
             self._change_root()
-        elif weight == self.best_weight == float('inf'):
+        elif (weight == self.best_weight) and (self.best_weight == float('inf')):
             self.in_queue.put(Message(MessageType.HALT, None))
                 
     def _change_root(self):
@@ -251,7 +251,6 @@ class NodeThread(Thread):
     def run(self):
         exit = 0
         while True:
-            sleep(0.1)
             if not self.in_queue.empty():
                 exit = 0
                 message = self.in_queue.get()
@@ -279,7 +278,8 @@ class NodeThread(Thread):
                         return
                 
                 self.in_queue.task_done()
-            elif exit < 10:
+            elif exit < 100:
+                sleep(0.1)
                 exit += 1
             else:
                 break

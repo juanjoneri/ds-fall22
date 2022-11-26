@@ -20,11 +20,11 @@ def draw(dataset, T, file_name='plot'):
 
 if __name__ == '__main__':
     
-    dataset = Dataset('datasets/cluster-10')
+    dataset = Dataset('datasets/cluster-100')
     G = dataset.G
     
     T = nx.minimum_spanning_tree(G)
     draw(dataset, T, 'library')
     
-    T2 = solve(G, 3)
+    T2 = solve(G, 10)
     draw(dataset, T2, 'custom')
