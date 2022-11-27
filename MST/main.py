@@ -37,18 +37,21 @@ if __name__ == '__main__':
     G = dataset.G
     
     scipy_matrix = nx.to_scipy_sparse_matrix(G)
-    scipy_mst = minimum_spanning_tree(scipy_matrix)
-    print(scipy_mst)
 
-#    start = time.time()
-#    T = nx.minimum_spanning_tree(G)
-#    runtime = (time.time() - start)
-#    
-#    T2, runtime2 = solve(G, seeds, verbose)
-#    
-#    print(f'NX Runtime {runtime}')
-#    print(f'GHS Runtime {runtime2}')
-#    
+    start = time.time()
+    T = nx.minimum_spanning_tree(G)
+    runtime = (time.time() - start)
+    
+    T2, runtime2 = solve(G, seeds, verbose)
+
+    start_sci_py = time.time()
+    scipy_mst = minimum_spanning_tree(scipy_matrix)
+    sci_py_runtime = (time.time() - start_sci_py)
+    
+    print(f'NX Runtime {runtime}')
+    print(f'GHS Runtime {runtime2}')
+    print(f'SCIPY Runtime {sci_py_runtime}')
+    
 #    if (draw):
 #        draw_graph(dataset, T, 'library')
 #        draw_graph(dataset, T2, 'custom')
