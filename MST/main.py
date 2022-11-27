@@ -3,9 +3,11 @@ from datasets.dataset_loader import Dataset
 
 import matplotlib.pyplot as plt
 import networkx as nx
+import sys
+import time
 
 
-def draw(dataset, T, file_name='plot'):
+def draw_graph(dataset, T, file_name='plot'):
     pos = dataset.coordinates
     
     tree_edges = set(T.edges())
@@ -20,11 +22,28 @@ def draw(dataset, T, file_name='plot'):
 
 if __name__ == '__main__':
     
-    dataset = Dataset('datasets/cluster-100')
+    if len(sys.argv) < 3:
+        print("Please run as:")
+        print("python main.py moons-100 10 -v -d")
+        exit()
+    
+    dataset_file = 'datasets/' + sys.argv[1]
+    seeds = int(sys.argv[2])
+    verbose = '-v' in sys.argv
+    draw = '-d' in sys.argv
+    
+    dataset = Dataset(dataset_file)
     G = dataset.G
     
+    start = time.time()
     T = nx.minimum_spanning_tree(G)
-    draw(dataset, T, 'library')
+    runtime = (time.time() - start)
     
-    T2 = solve(G, 10)
-    draw(dataset, T2, 'custom')
+    T2, runtime2 = solve(G, seeds, verbose)
+    
+    print(f'NX Runtime {runtime}')
+    print(f'GHS Runtime {runtime2}')
+    
+    if (draw):
+        draw_graph(dataset, T, 'library')
+        draw_graph(dataset, T2, 'custom')

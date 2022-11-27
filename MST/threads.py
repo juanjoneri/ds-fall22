@@ -7,6 +7,9 @@ from time import sleep
 from typing import Dict, Optional
 import networkx as nx
 import random
+import sys
+import time
+
 
 class MessageType(Enum):
     WAKE_UP = 1
@@ -68,6 +71,9 @@ class Edge:
         
     def change_root(self, *args):
         self._send(Message(MessageType.CHANGE_ROOT, args))
+        
+    def halt(self):
+        self._send(Message(MessageType.HALT, None))
 
 class NodeState(Enum):
     SLEEPING = 1 # Initial state
@@ -122,7 +128,6 @@ class Node:
         self._wake_up()
     
     def _wake_up(self) -> None:
-        print(f'{self.id} woke up')
         min_edge = self.min_basic
         min_edge.type = EdgeType.BRANCH
         self.level = 0
@@ -224,6 +229,11 @@ class Node:
             self._change_root()
         elif (weight == self.best_weight) and (self.best_weight == float('inf')):
             self.in_queue.put(Message(MessageType.HALT, None))
+    
+    def halt(self):
+        for edge in self.edges.values():
+            edge.halt()
+         
                 
     def _change_root(self):
         if self.best_edge.type == EdgeType.BRANCH:
@@ -238,10 +248,11 @@ class Node:
 
 class NodeThread(Thread):
     
-    def __init__(self, id: int) -> None:
+    def __init__(self, id: int, verbose: bool) -> None:
         super().__init__()
         self.in_queue: Queue = Queue()
         self.node: Node = Node(id, self.in_queue)
+        self.verbose: bool = verbose
         
     def add_neighbor(self, weight: float, neighbor: 'NodeThread') -> None:
         if neighbor.node.id not in self.node.edges:
@@ -254,7 +265,8 @@ class NodeThread(Thread):
             if not self.in_queue.empty():
                 exit = 0
                 message = self.in_queue.get()
-                print(f'{self.node.id} processing {message.type}:{message.args}')
+                if (self.verbose):
+                    print(f'{self.node.id} processing {message.type}:{message.args}')
                 
                 match message.type:
                     case MessageType.WAKE_UP:
@@ -274,19 +286,20 @@ class NodeThread(Thread):
                     case MessageType.CHANGE_ROOT:
                         self.node.change_root(*message.args)
                     case MessageType.HALT:
+                        self.node.halt()
                         self.in_queue.task_done()
                         return
                 
                 self.in_queue.task_done()
             elif exit < 100:
-                sleep(0.1)
+                sleep(0.01)
                 exit += 1
             else:
                 break
             
             
-def solve(G, seeds=1):
-    nodes = {id: NodeThread(id) for id in G.nodes()}
+def solve(G, seeds=1, verbose=False):
+    nodes = {id: NodeThread(id, verbose) for id in G.nodes()}
     for edge in G.edges.data():
         x, y, data = edge
         nodes[x].add_neighbor(data['weight'], nodes[y])
@@ -295,11 +308,13 @@ def solve(G, seeds=1):
     for node_id in seeds:
         nodes[node_id].in_queue.put(Message(MessageType.WAKE_UP, None))
         
+    start = time.time()
     for node in nodes.values():
         node.start()
     
     for node in nodes.values():
         node.join()
+    runtime = (time.time() - start)
     
     solution = nx.Graph()
     solution.add_nodes_from(nodes.keys())
@@ -309,4 +324,4 @@ def solve(G, seeds=1):
         if edge is not None:
             solution.add_edge(node.node.id, edge.neighbor_id, weight=edge.weight)
     
-    return solution
+    return solution, runtime
