@@ -5,7 +5,9 @@ from enum import Enum
 from typing import Dict
 from time import sleep
 from typing import Dict, Optional
- 
+import networkx as nx
+import random
+
 class MessageType(Enum):
     WAKE_UP = 1
     CONNECT = 2
@@ -15,6 +17,7 @@ class MessageType(Enum):
     REJECT = 6
     REPORT = 7
     CHANGE_ROOT = 8
+    HALT = 9
 
 Message = namedtuple('Message', ['type', 'args'])
 
@@ -71,7 +74,7 @@ class NodeState(Enum):
     FIND = 2 # While looking for min weight outgoing edge
     FOUND = 3 # At all other times
 
-def message(func):
+def wakup(func):
     def wrapper(*args, **kwargs):
         node = args[0]
         node.wake_up()
@@ -127,7 +130,7 @@ class Node:
         self.find_count = 0
         min_edge.connect(self.id, 0)
         
-    @message
+    @wakup
     def connect(self, neighbor_id: int, level: int):   
         edge = self.edges[neighbor_id]
         
@@ -141,7 +144,6 @@ class Node:
         else:
             edge.initiate(self.id, self.level + 1, edge.weight, NodeState.FIND)
             
-    @message
     def initiate(self, neighbor_id: int, level: int, identity: float, state: NodeState):
         self.level = level
         self.identity = identity
@@ -169,7 +171,7 @@ class Node:
             self.test_edge = None
             self._report()
             
-    @message
+    @wakup
     def test(self, neighbor_id: int, level: int, identity: float):
         edge = self.edges[neighbor_id]
         
@@ -186,7 +188,6 @@ class Node:
             else:
                 self._test()
                 
-    @message
     def accept(self, neighbor_id: int):
         edge = self.edges[neighbor_id]
         
@@ -197,7 +198,6 @@ class Node:
             
         self._report()
         
-    @message
     def reject(self, neighbor_id: int):
         edge = self.edges[neighbor_id]
         
@@ -211,7 +211,6 @@ class Node:
             self.state = NodeState.FOUND
             self.in_branch.report(self.id, self.best_weight)
     
-    @message  
     def report(self, neighbor_id: int, weight: float):
         if self.in_branch != self.edges[neighbor_id]:
             self.find_count -= 1
@@ -223,8 +222,8 @@ class Node:
             self.in_queue.put(Message(MessageType.REPORT, (neighbor_id, weight)))
         elif weight > self.best_weight:
             self._change_root()
-        elif weight == self.best_weight == float('inf'):
-            print("HALT")
+        elif (weight == self.best_weight) and (self.best_weight == float('inf')):
+            self.in_queue.put(Message(MessageType.HALT, None))
                 
     def _change_root(self):
         if self.best_edge.type == EdgeType.BRANCH:
@@ -233,7 +232,6 @@ class Node:
             self.best_edge.connect(self.id, self.level)
             self.best_edge.type = EdgeType.BRANCH
             
-    @message
     def change_root(self):
         self._change_root()
 
@@ -253,7 +251,6 @@ class NodeThread(Thread):
     def run(self):
         exit = 0
         while True:
-            sleep(0.1)
             if not self.in_queue.empty():
                 exit = 0
                 message = self.in_queue.get()
@@ -276,9 +273,40 @@ class NodeThread(Thread):
                         self.node.report(*message.args)
                     case MessageType.CHANGE_ROOT:
                         self.node.change_root(*message.args)
+                    case MessageType.HALT:
+                        self.in_queue.task_done()
+                        return
                 
                 self.in_queue.task_done()
-            elif exit < 10:
+            elif exit < 100:
+                sleep(0.1)
                 exit += 1
             else:
                 break
+            
+            
+def solve(G, seeds=1):
+    nodes = {id: NodeThread(id) for id in G.nodes()}
+    for edge in G.edges.data():
+        x, y, data = edge
+        nodes[x].add_neighbor(data['weight'], nodes[y])
+    
+    seeds = random.sample(nodes.keys(), seeds)
+    for node_id in seeds:
+        nodes[node_id].in_queue.put(Message(MessageType.WAKE_UP, None))
+        
+    for node in nodes.values():
+        node.start()
+    
+    for node in nodes.values():
+        node.join()
+    
+    solution = nx.Graph()
+    solution.add_nodes_from(nodes.keys())
+    
+    for node in nodes.values():
+        edge = node.node.in_branch
+        if edge is not None:
+            solution.add_edge(node.node.id, edge.neighbor_id, weight=edge.weight)
+    
+    return solution

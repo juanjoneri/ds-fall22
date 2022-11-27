@@ -1,41 +1,30 @@
-from threads import NodeThread, Message, MessageType
+from threads import solve
+from datasets.dataset_loader import Dataset
+
+import matplotlib.pyplot as plt
+import networkx as nx
+
+
+def draw(dataset, T, file_name='plot'):
+    pos = dataset.coordinates
+    
+    tree_edges = set(T.edges())
+    edge_color = ['r' if edge in tree_edges else 'k' for edge in dataset.G.edges()]
+    
+    labels = nx.get_edge_attributes(dataset.G,'weight')
+    
+    fig = plt.figure()
+    nx.draw(dataset.G, pos, with_labels=True, edge_color=edge_color)
+    # nx.draw_networkx_edge_labels(dataset.G, pos, edge_labels=labels)
+    plt.savefig(f'{file_name}.png')
 
 if __name__ == '__main__':
-    node_1 = NodeThread(1)
-    node_2 = NodeThread(2)
-    node_3 = NodeThread(3)
-    node_4 = NodeThread(4)
-    node_5 = NodeThread(5)
-    node_6 = NodeThread(6)
     
-    node_1.add_neighbor(1.1, node_2)
-    node_1.add_neighbor(1.7, node_3)
-    node_1.add_neighbor(2.6, node_5)
-    node_3.add_neighbor(3.8, node_5)
-    node_2.add_neighbor(3.1, node_4)
-    node_4.add_neighbor(3.7, node_6)
-    node_5.add_neighbor(2.1, node_6)
+    dataset = Dataset('datasets/cluster-100')
+    G = dataset.G
     
-    # node_1.in_queue.put(Message(MessageType.WAKE_UP, None))
-    node_5.in_queue.put(Message(MessageType.WAKE_UP, None))
+    T = nx.minimum_spanning_tree(G)
+    draw(dataset, T, 'library')
     
-    node_1.start()
-    node_2.start()
-    node_3.start()
-    node_4.start()
-    node_5.start()
-    node_6.start()
-    
-    node_1.join()
-    node_2.join()
-    node_3.join()
-    node_4.join()
-    node_5.join()
-    node_6.join()
-    
-    print(node_1.node)
-    print(node_2.node)
-    print(node_3.node)
-    print(node_4.node)
-    print(node_5.node)
-    print(node_6.node)
+    T2 = solve(G, 10)
+    draw(dataset, T2, 'custom')
