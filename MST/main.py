@@ -51,7 +51,11 @@ if __name__ == '__main__':
     print(f'NX Runtime {runtime}')
     print(f'GHS Runtime {runtime2}')
     print(f'SCIPY Runtime {sci_py_runtime}')
+
+    sci_py_to_nx = nx.from_scipy_sparse_matrix(scipy_mst)
+    print(sci_py_to_nx)
     
-#    if (draw):
-#        draw_graph(dataset, T, 'library')
-#        draw_graph(dataset, T2, 'custom')
+    if (draw):
+        draw_graph(dataset, T, 'library')
+        draw_graph(dataset, T2, 'custom')
+        draw_graph(dataset, sci_py_to_nx, 'sci-py')
