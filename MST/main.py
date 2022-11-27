@@ -25,6 +25,8 @@ if __name__ == '__main__':
     
     T = nx.minimum_spanning_tree(G)
     draw(dataset, T, 'library')
+
+    print(G)
     
     T2 = solve(G, 10)
     draw(dataset, T2, 'custom')

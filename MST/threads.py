@@ -291,7 +291,7 @@ def solve(G, seeds=1):
         x, y, data = edge
         nodes[x].add_neighbor(data['weight'], nodes[y])
     
-    seeds = random.sample(nodes.keys(), seeds)
+    seeds = random.sample(sorted(nodes.keys()), seeds)
     for node_id in seeds:
         nodes[node_id].in_queue.put(Message(MessageType.WAKE_UP, None))
         
