@@ -3,6 +3,7 @@ from datasets.dataset_loader import Dataset
 
 import matplotlib.pyplot as plt
 import networkx as nx
+from scipy.sparse.csgraph import minimum_spanning_tree
 import sys
 import time
 
@@ -35,15 +36,19 @@ if __name__ == '__main__':
     dataset = Dataset(dataset_file)
     G = dataset.G
     
-    start = time.time()
-    T = nx.minimum_spanning_tree(G)
-    runtime = (time.time() - start)
-    
-    T2, runtime2 = solve(G, seeds, verbose)
-    
-    print(f'NX Runtime {runtime}')
-    print(f'GHS Runtime {runtime2}')
-    
-    if (draw):
-        draw_graph(dataset, T, 'library')
-        draw_graph(dataset, T2, 'custom')
+    scipy_matrix = nx.to_scipy_sparse_matrix(G)
+    scipy_mst = minimum_spanning_tree(scipy_matrix)
+    print(scipy_mst)
+
+#    start = time.time()
+#    T = nx.minimum_spanning_tree(G)
+#    runtime = (time.time() - start)
+#    
+#    T2, runtime2 = solve(G, seeds, verbose)
+#    
+#    print(f'NX Runtime {runtime}')
+#    print(f'GHS Runtime {runtime2}')
+#    
+#    if (draw):
+#        draw_graph(dataset, T, 'library')
+#        draw_graph(dataset, T2, 'custom')
