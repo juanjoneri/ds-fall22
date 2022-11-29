@@ -1,13 +1,10 @@
-from threading import Thread
-from queue import Queue
+from multiprocessing import Process, Queue
 from collections import namedtuple
 from enum import Enum
 from typing import Dict
-from time import sleep
 from typing import Dict, Optional
+
 import networkx as nx
-import random
-import sys
 import time
 
 
@@ -246,7 +243,7 @@ class Node:
         self._change_root()
 
 
-class NodeThread(Thread):
+class NodeThread(Process):
     
     def __init__(self, id: int, verbose: bool) -> None:
         super().__init__()
@@ -260,51 +257,46 @@ class NodeThread(Thread):
             neighbor.add_neighbor(weight, self)
     
     def run(self):
-        exit = 0
         while True:
-            if not self.in_queue.empty():
-                exit = 0
-                message = self.in_queue.get()
-                if (self.verbose):
-                    print(f'{self.node.id} processing {message.type}:{message.args}')
+            try:
+                message = self.in_queue.get(timeout=60)
+            except:
+                self.in_queue.close()
+                return
                 
-                match message.type:
-                    case MessageType.WAKE_UP:
-                        self.node.wake_up()
-                    case MessageType.CONNECT:
-                        self.node.connect(*message.args)
-                    case MessageType.INITIATE:
-                        self.node.initiate(*message.args)
-                    case MessageType.TEST:
-                        self.node.test(*message.args)
-                    case MessageType.ACCEPT:
-                        self.node.accept(*message.args)
-                    case MessageType.REJECT:
-                        self.node.reject(*message.args)
-                    case MessageType.REPORT:
-                        self.node.report(*message.args)
-                    case MessageType.CHANGE_ROOT:
-                        self.node.change_root(*message.args)
-                    case MessageType.HALT:
-                        self.node.halt()
-                        self.in_queue.task_done()
-                        return
-                
-                self.in_queue.task_done()
-            elif exit < 100:
-                sleep(0.01)
-                exit += 1
-            else:
-                break
+            if (self.verbose):
+                print(f'{self.node.id} processing {message.type}:{message.args}')
+            
+            match message.type:
+                case MessageType.WAKE_UP:
+                    self.node.wake_up()
+                case MessageType.CONNECT:
+                    self.node.connect(*message.args)
+                case MessageType.INITIATE:
+                    self.node.initiate(*message.args)
+                case MessageType.TEST:
+                    self.node.test(*message.args)
+                case MessageType.ACCEPT:
+                    self.node.accept(*message.args)
+                case MessageType.REJECT:
+                    self.node.reject(*message.args)
+                case MessageType.REPORT:
+                    self.node.report(*message.args)
+                case MessageType.CHANGE_ROOT:
+                    self.node.change_root(*message.args)
+                case MessageType.HALT:
+                    self.node.halt()
+                    self.in_queue.close()
+                    return
             
             
-def solve(G, seeds=1, verbose=False):
+def solve(G, seeds=[1], verbose=False):
     nodes = {id: NodeThread(id, verbose) for id in G.nodes()}
     for edge in G.edges.data():
         x, y, data = edge
         nodes[x].add_neighbor(data['weight'], nodes[y])
     
-    seeds = random.sample(sorted(nodes.keys()), seeds)
+    print(seeds)
     for node_id in seeds:
         nodes[node_id].in_queue.put(Message(MessageType.WAKE_UP, None))
         

@@ -25,37 +25,36 @@ if __name__ == '__main__':
     
     if len(sys.argv) < 3:
         print("Please run as:")
-        print("python main.py moons-100 10 -v -d")
+        print("python main.py moons-100 20,12,6,80 -v -d")
         exit()
     
     dataset_file = 'datasets/' + sys.argv[1]
-    seeds = int(sys.argv[2])
+    seeds = list(map(int, sys.argv[2].split(',')))
     verbose = '-v' in sys.argv
     draw = '-d' in sys.argv
     
     dataset = Dataset(dataset_file)
     G = dataset.G
     
-    scipy_matrix = nx.to_scipy_sparse_matrix(G)
+    scipy_matrix = nx.to_scipy_sparse_array(G)
 
     start = time.time()
     T = nx.minimum_spanning_tree(G)
-    runtime = (time.time() - start)
+    nx_runtime = (time.time() - start)
     
-    T2, runtime2 = solve(G, seeds, verbose)
+    T2, ghs_runtime = solve(G, seeds, verbose)
 
     start_sci_py = time.time()
     scipy_mst = minimum_spanning_tree(scipy_matrix)
     sci_py_runtime = (time.time() - start_sci_py)
     
-    print(f'NX Runtime {runtime}')
-    print(f'GHS Runtime {runtime2}')
+    print(f'NX Runtime {nx_runtime}')
+    print(f'GHS Runtime {ghs_runtime}')
     print(f'SCIPY Runtime {sci_py_runtime}')
 
-    sci_py_to_nx = nx.from_scipy_sparse_matrix(scipy_mst)
-    print(sci_py_to_nx)
+    sci_py_to_nx = nx.from_scipy_sparse_array(scipy_mst)
     
     if (draw):
-        draw_graph(dataset, T, 'library')
-        draw_graph(dataset, T2, 'custom')
+        draw_graph(dataset, T, 'nx')
+        draw_graph(dataset, T2, 'ghs')
         draw_graph(dataset, sci_py_to_nx, 'sci-py')
