@@ -257,6 +257,8 @@ class NodeThread(Process):
             neighbor.add_neighbor(weight, self)
     
     def run(self):
+        msg_streak = 0
+        max_streak = 10
         while True:
             try:
                 message = self.in_queue.get(timeout=60)
@@ -289,7 +291,12 @@ class NodeThread(Process):
                     self.in_queue.close()
                     return
             
-            
+            msg_streak += 1
+            if msg_streak >= max_streak:
+                msg_streak = 0
+                time.sleep(0.01)
+
+
 def solve(G, seeds=[1], verbose=False):
     nodes = {id: NodeThread(id, verbose) for id in G.nodes()}
     for edge in G.edges.data():
