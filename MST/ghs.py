@@ -1,4 +1,4 @@
-from multiprocessing import Process, Queue
+from multiprocessing import Process, Queue, Pipe
 from collections import namedtuple
 from enum import Enum
 from typing import Dict
@@ -229,7 +229,8 @@ class Node:
     
     def halt(self):
         for edge in self.edges.values():
-            edge.halt()
+            if edge.type == EdgeType.BRANCH:
+                edge.halt()
          
                 
     def _change_root(self):
@@ -243,15 +244,16 @@ class Node:
         self._change_root()
 
 
-class NodeThread(Process):
+class NodeProcess(Process):
     
-    def __init__(self, id: int, verbose: bool) -> None:
+    def __init__(self, id: int, pipe: Pipe, verbose: bool) -> None:
         super().__init__()
+        self.pipe = pipe
         self.in_queue: Queue = Queue()
         self.node: Node = Node(id, self.in_queue)
         self.verbose: bool = verbose
         
-    def add_neighbor(self, weight: float, neighbor: 'NodeThread') -> None:
+    def add_neighbor(self, weight: float, neighbor: 'NodeProcess') -> None:
         if neighbor.node.id not in self.node.edges:
             self.node.edges[neighbor.node.id] = Edge(weight, neighbor.node.id, neighbor.in_queue)
             neighbor.add_neighbor(weight, self)
@@ -263,8 +265,7 @@ class NodeThread(Process):
             try:
                 message = self.in_queue.get(timeout=60)
             except:
-                self.in_queue.close()
-                return
+                break
                 
             if (self.verbose):
                 print(f'{self.node.id} processing {message.type}:{message.args}')
@@ -288,22 +289,25 @@ class NodeThread(Process):
                     self.node.change_root(*message.args)
                 case MessageType.HALT:
                     self.node.halt()
-                    self.in_queue.close()
-                    return
+                    break
             
             msg_streak += 1
             if msg_streak >= max_streak:
                 msg_streak = 0
                 time.sleep(0.01)
 
+        self.in_queue.close()
+        in_branch = self.node.in_branch
+        self.pipe.send((in_branch.neighbor_id, in_branch.weight))
+
 
 def solve(G, seeds=[1], verbose=False):
-    nodes = {id: NodeThread(id, verbose) for id in G.nodes()}
+    pipes = {id: Pipe() for id in G.nodes()}
+    nodes = {id: NodeProcess(id, pipes[id][0], verbose) for id in G.nodes()}
     for edge in G.edges.data():
         x, y, data = edge
         nodes[x].add_neighbor(data['weight'], nodes[y])
     
-    print(seeds)
     for node_id in seeds:
         nodes[node_id].in_queue.put(Message(MessageType.WAKE_UP, None))
         
@@ -318,9 +322,9 @@ def solve(G, seeds=[1], verbose=False):
     solution = nx.Graph()
     solution.add_nodes_from(nodes.keys())
     
-    for node in nodes.values():
-        edge = node.node.in_branch
-        if edge is not None:
-            solution.add_edge(node.node.id, edge.neighbor_id, weight=edge.weight)
+    for id, pipe in pipes.items():
+        data = pipe[1].recv()
+        print(id, data)
+        solution.add_edge(id, data[0], weight=data[1])
     
     return solution, runtime

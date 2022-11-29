@@ -21,6 +21,7 @@ Run the code
 - second parameter is the list of seeds (nodes initially awake)
 - use `-v` for verbose output
 - use `-d` to draw the output graph
+- use `-w` to draw the weights in output graph
 
 ```
 python main.py moons-100 10 -v -d
