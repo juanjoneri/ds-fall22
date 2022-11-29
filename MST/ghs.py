@@ -21,6 +21,8 @@ class MessageType(Enum):
 
 Message = namedtuple('Message', ['type', 'args'])
 
+MstEdge = namedtuple('MstEdge', ['parent_id', 'weight'])
+
 class EdgeType(Enum):
     BASIC = 1 # Initial state
     BRANCH = 2 # Branch in current fragment
@@ -248,7 +250,7 @@ class NodeProcess(Process):
     
     def __init__(self, id: int, pipe: Pipe, verbose: bool) -> None:
         super().__init__()
-        self.pipe = pipe
+        self.pipe: Pipe = pipe
         self.in_queue: Queue = Queue()
         self.node: Node = Node(id, self.in_queue)
         self.verbose: bool = verbose
@@ -298,7 +300,7 @@ class NodeProcess(Process):
 
         self.in_queue.close()
         in_branch = self.node.in_branch
-        self.pipe.send((in_branch.neighbor_id, in_branch.weight))
+        self.pipe.send(MstEdge(in_branch.neighbor_id, in_branch.weight))
 
 
 def solve(G, seeds=[1], verbose=False):
@@ -323,8 +325,9 @@ def solve(G, seeds=[1], verbose=False):
     solution.add_nodes_from(nodes.keys())
     
     for id, pipe in pipes.items():
-        data = pipe[1].recv()
-        print(id, data)
-        solution.add_edge(id, data[0], weight=data[1])
+        mst_edge = pipe[1].recv()
+        if verbose:
+            print(f'Node {id} returned {mst_edge}')
+        solution.add_edge(id, mst_edge.parent_id, weight=mst_edge.weight)
     
     return solution, runtime
