@@ -79,7 +79,7 @@ class NodeState(Enum):
     FIND = 2 # While looking for min weight outgoing edge
     FOUND = 3 # At all other times
 
-def wakup(func):
+def wakeup(func):
     def wrapper(*args, **kwargs):
         node = args[0]
         node.wake_up()
@@ -134,7 +134,7 @@ class Node:
         self.find_count = 0
         min_edge.connect(self.id, 0)
         
-    @wakup
+    @wakeup
     def connect(self, neighbor_id: int, level: int):   
         edge = self.edges[neighbor_id]
         
@@ -175,7 +175,7 @@ class Node:
             self.test_edge = None
             self._report()
             
-    @wakup
+    @wakeup
     def test(self, neighbor_id: int, level: int, identity: float):
         edge = self.edges[neighbor_id]
         
