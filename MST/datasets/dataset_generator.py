@@ -8,6 +8,10 @@ import os
 import networkx as nx
 import numpy as np
 
+
+_NEIGHBORS = 20
+
+
 def _build_graph(nodes, neighbors):
     '''
     nodes: coordinates of the nodes as an np array
@@ -26,7 +30,7 @@ def _build_graph(nodes, neighbors):
             
     return G
 
-def _init(nodes, neighbors=5):
+def _init(nodes, neighbors=_NEIGHBORS):
     distmat = squareform(pdist(nodes, 'euclidean'))
     neighbors = np.sort(np.argsort(distmat, axis=1)[:, 0:neighbors])
     coordinates = dict(list(enumerate(map(tuple, nodes))))
@@ -76,19 +80,19 @@ def _save_dataset(G, coordinates, edges, output_file):
 
 if __name__ == '__main__':
 
-    for size in (10,):
+    for size in (100,):
         # Rand
         G, coordinates = _init_rand(size)
-        _save_dataset(G, coordinates, G.edges, f'rand-{size}')
+        _save_dataset(G, coordinates, G.edges, f'rand-{_NEIGHBORS}-{size}')
 
         # Circle
         G, coordinates = _init_circles((size//2, size//2), 0.05)
-        _save_dataset(G, coordinates, G.edges, f'circle-{size}')
+        _save_dataset(G, coordinates, G.edges, f'circle-{_NEIGHBORS}-{size}')
 
         # Cluster
         G, coordinates = _init_blobs(size, [(0.5, 0.5)], 0.2)
-        _save_dataset(G, coordinates, G.edges, f'cluster-{size}')
+        _save_dataset(G, coordinates, G.edges, f'cluster-{_NEIGHBORS}-{size}')
 
         # Moon
         G, coordinates = _init_halfmoons(size, 0.1)
-        _save_dataset(G, coordinates, G.edges, f'moons-{size}')
+        _save_dataset(G, coordinates, G.edges, f'moons-{_NEIGHBORS}-{size}')
