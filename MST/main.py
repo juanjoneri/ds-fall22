@@ -23,11 +23,39 @@ def draw_graph(dataset, T, file_name='plot', weights=False):
     
     plt.savefig(f'{file_name}.png')
 
+
+def compute_weight(G):
+    weight = 0
+    for edge in G.edges.data():
+        x, y, data = edge
+        weight += data['weight']
+    
+    return weight
+
+def timed(func):
+    def wrapper(*args, **kwargs):
+        start = time.time()
+        response = func(*args, **kwargs)
+        runtime = (time.time() - start)
+        return response, runtime
+
+    return wrapper
+
+
+@timed
+def solve_nx(G):
+    return nx.minimum_spanning_tree(G)
+
+@timed
+def solve_scipy(G):
+    return minimum_spanning_tree(nx.to_scipy_sparse_array(G))
+    
+
 if __name__ == '__main__':
     
     if len(sys.argv) < 3:
-        print("Please run as:")
-        print("python main.py moons-100 20,12,6,80 -v -d -w")
+        print('Please run as:')
+        print('python main.py moons-100 20,12,6,80 -v -d -w')
         exit()
     
     dataset_file = 'datasets/' + sys.argv[1]
@@ -39,25 +67,28 @@ if __name__ == '__main__':
     dataset = Dataset(dataset_file)
     G = dataset.G
     
-    scipy_matrix = nx.to_scipy_sparse_array(G)
-
-    start = time.time()
-    T = nx.minimum_spanning_tree(G)
-    nx_runtime = (time.time() - start)
+    nx_mst, nx_runtime = solve_nx(G)    
+    ghs_mst, ghs_runtime = solve(G, seeds, verbose)
+    scipy_mst, scipy_runtime = solve_scipy(G)
+    scipy_mst = nx.from_scipy_sparse_array(scipy_mst)
     
-    T2, ghs_runtime = solve(G, seeds, verbose)
-
-    start_sci_py = time.time()
-    scipy_mst = minimum_spanning_tree(scipy_matrix)
-    sci_py_runtime = (time.time() - start_sci_py)
+    print(f'NX Runtime {nx_runtime:.3f}s')
+    print(f'GHS Runtime {ghs_runtime:.3f}s')
+    print(f'SCIPY Runtime {scipy_runtime:.3f}s')
     
-    print(f'NX Runtime {nx_runtime}')
-    print(f'GHS Runtime {ghs_runtime}')
-    print(f'SCIPY Runtime {sci_py_runtime}')
-
-    sci_py_to_nx = nx.from_scipy_sparse_array(scipy_mst)
+    nx_weight = compute_weight(nx_mst)
+    ghs_weight = compute_weight(ghs_mst)
+    scipy_weight = compute_weight(scipy_mst)
+    
+    print(f'NX Weight {nx_weight}')
+    print(f'GHS Weight {ghs_weight}')
+    print(f'SCIPY Weight {scipy_weight}')
+    
+    # Check that the solutions match
+    if not (nx_weight == ghs_weight == scipy_weight):
+        print('Weights do not match!')
     
     if (draw):
-        draw_graph(dataset, T, 'nx', weights)
-        draw_graph(dataset, T2, 'ghs', weights)
-        draw_graph(dataset, sci_py_to_nx, 'sci-py', weights)
+        draw_graph(dataset, nx_mst, 'nx', weights)
+        draw_graph(dataset, ghs_mst, 'ghs', weights)
+        draw_graph(dataset, scipy_mst, 'sci-py', weights)
